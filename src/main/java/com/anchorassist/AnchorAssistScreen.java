@@ -1,118 +1,165 @@
 package com.anchorassist;
 
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 
 public class AnchorAssistScreen extends Screen {
 
-    protected AnchorAssistScreen() {
+    private final int PANEL_WIDTH = 230;
+    private final int PANEL_HEIGHT = 210;
+
+    private int startX;
+    private int startY;
+
+    public AnchorAssistScreen() {
         super(Text.literal("Anchor Assist Settings"));
     }
 
     @Override
     protected void init() {
 
-        int centerX = this.width / 2;
-        int centerY = this.height / 2;
+        startX = (this.width - PANEL_WIDTH) / 2;
+        startY = (this.height - PANEL_HEIGHT) / 2;
 
-        int buttonWidth = 180;
-        int buttonHeight = 20;
-        int spacing = 28;
+        int y = startY + 25;
+        int spacing = 26;
 
         // =========================
         // AUTO HIT
         // =========================
-        this.addDrawableChild(ButtonWidget.builder(
-                getToggleText("Auto Hit", AnchorAssist.autoHitEnabled),
-                button -> {
-                    AnchorAssist.autoHitEnabled = !AnchorAssist.autoHitEnabled;
-                    button.setMessage(getToggleText("Auto Hit", AnchorAssist.autoHitEnabled));
-                })
-                .dimensions(centerX - buttonWidth / 2, centerY - spacing * 2, buttonWidth, buttonHeight)
-                .build()
-        );
+        this.addDrawableChild(createToggleButton(
+                "Auto Hit",
+                AnchorAssist.autoHitEnabled,
+                value -> AnchorAssist.autoHitEnabled = value,
+                y
+        ));
+
+        y += spacing;
 
         // =========================
         // AUTO ANCHOR
         // =========================
-        this.addDrawableChild(ButtonWidget.builder(
-                getToggleText("Auto Anchor", AnchorAssist.autoAnchorEnabled),
-                button -> {
-                    AnchorAssist.autoAnchorEnabled = !AnchorAssist.autoAnchorEnabled;
-                    button.setMessage(getToggleText("Auto Anchor", AnchorAssist.autoAnchorEnabled));
-                })
-                .dimensions(centerX - buttonWidth / 2, centerY - spacing, buttonWidth, buttonHeight)
-                .build()
-        );
+        this.addDrawableChild(createToggleButton(
+                "Auto Anchor",
+                AnchorAssist.autoAnchorEnabled,
+                value -> AnchorAssist.autoAnchorEnabled = value,
+                y
+        ));
+
+        y += spacing;
 
         // =========================
         // ANCHOR SAFE
         // =========================
-        this.addDrawableChild(ButtonWidget.builder(
-                getToggleText("Anchor Safe", AnchorAssist.anchorSafeEnabled),
-                button -> {
-                    AnchorAssist.anchorSafeEnabled = !AnchorAssist.anchorSafeEnabled;
-                    button.setMessage(getToggleText("Anchor Safe", AnchorAssist.anchorSafeEnabled));
-                })
-                .dimensions(centerX - buttonWidth / 2, centerY, buttonWidth, buttonHeight)
-                .build()
-        );
+        this.addDrawableChild(createToggleButton(
+                "Anchor Safe",
+                AnchorAssist.anchorSafeEnabled,
+                value -> AnchorAssist.anchorSafeEnabled = value,
+                y
+        ));
+
+        y += spacing;
 
         // =========================
         // FAST TOTEM
         // =========================
+        this.addDrawableChild(createToggleButton(
+                "Fast Totem",
+                AnchorAssist.fastTotemEnabled,
+                value -> AnchorAssist.fastTotemEnabled = value,
+                y
+        ));
+
+        y += spacing;
+
+        // =========================
+        // ROTATION ASSIST
+        // =========================
+        this.addDrawableChild(createToggleButton(
+                "Rotation Assist",
+                AnchorAssist.rotationAssistEnabled,
+                value -> AnchorAssist.rotationAssistEnabled = value,
+                y
+        ));
+
+        y += spacing + 8;
+
+        // =========================
+        // CLOSE BUTTON
+        // =========================
         this.addDrawableChild(ButtonWidget.builder(
-                getToggleText("Fast Totem", AnchorAssist.fastTotemEnabled),
+                Text.literal("Close"),
+                button -> this.close()
+        ).dimensions(startX + 65, y, 100, 20).build());
+    }
+
+    // =========================
+    // TOGGLE BUTTON BUILDER
+    // =========================
+    private ButtonWidget createToggleButton(
+            String name,
+            boolean currentState,
+            java.util.function.Consumer<Boolean> setter,
+            int yPosition
+    ) {
+
+        return ButtonWidget.builder(
+                getToggleText(name, currentState),
                 button -> {
-                    AnchorAssist.fastTotemEnabled = !AnchorAssist.fastTotemEnabled;
-                    button.setMessage(getToggleText("Fast Totem", AnchorAssist.fastTotemEnabled));
-                })
-                .dimensions(centerX - buttonWidth / 2, centerY + spacing, buttonWidth, buttonHeight)
-                .build()
-        );
+                    boolean newState = !getCurrentState(name);
+                    setter.accept(newState);
+                    button.setMessage(getToggleText(name, newState));
+                }
+        ).dimensions(startX + 25, yPosition, 180, 20).build();
     }
 
     // =========================
-    // TEXT STYLE (Modern ON/OFF)
+    // STATE HELPER
     // =========================
-    private Text getToggleText(String name, boolean enabled) {
-        return Text.literal(name + ": ")
-                .append(enabled
-                        ? Text.literal("ON").formatted(Formatting.GREEN)
-                        : Text.literal("OFF").formatted(Formatting.RED)
-                );
+    private boolean getCurrentState(String name) {
+        return switch (name) {
+            case "Auto Hit" -> AnchorAssist.autoHitEnabled;
+            case "Auto Anchor" -> AnchorAssist.autoAnchorEnabled;
+            case "Anchor Safe" -> AnchorAssist.anchorSafeEnabled;
+            case "Fast Totem" -> AnchorAssist.fastTotemEnabled;
+            case "Rotation Assist" -> AnchorAssist.rotationAssistEnabled;
+            default -> false;
+        };
+    }
+
+    private Text getToggleText(String name, boolean state) {
+        return Text.literal(name + ": " + (state ? "ON" : "OFF"));
     }
 
     // =========================
-    // TITLE + KEYBINDS INFO
+    // RENDER
     // =========================
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
 
         this.renderBackground(context);
+
+        // Panel Background
+        context.fill(
+                startX,
+                startY,
+                startX + PANEL_WIDTH,
+                startY + PANEL_HEIGHT,
+                0xCC1E1E1E
+        );
+
+        // Title
+        context.drawCenteredTextWithShadow(
+                this.textRenderer,
+                this.title,
+                this.width / 2,
+                startY + 8,
+                0xFFFFFF
+        );
+
         super.render(context, mouseX, mouseY, delta);
-
-        int centerX = this.width / 2;
-
-        context.drawCenteredTextWithShadow(
-                this.textRenderer,
-                Text.literal("Anchor Assist").formatted(Formatting.AQUA, Formatting.BOLD),
-                centerX,
-                30,
-                0xFFFFFF
-        );
-
-        context.drawCenteredTextWithShadow(
-                this.textRenderer,
-                Text.literal("R = Hit | G = Anchor | Y = Safe | T = Totem | Shift = GUI")
-                        .formatted(Formatting.GRAY),
-                centerX,
-                45,
-                0xFFFFFF
-        );
     }
 
     @Override
