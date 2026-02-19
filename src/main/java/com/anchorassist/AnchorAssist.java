@@ -19,6 +19,7 @@ import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.MathHelper;
 
 import net.minecraft.block.RespawnAnchorBlock;
 import net.minecraft.block.BlockState;
@@ -36,6 +37,7 @@ public class AnchorAssist implements ClientModInitializer {
     public static boolean autoAnchorEnabled = true;
     public static boolean fastTotemEnabled = true;
     public static boolean anchorSafeEnabled = true;
+    public static boolean rotationAssistEnabled = true;
 
     // =========================
     // KEYBINDS
@@ -44,6 +46,7 @@ public class AnchorAssist implements ClientModInitializer {
     private static KeyBinding toggleAnchorKey;
     private static KeyBinding toggleTotemKey;
     private static KeyBinding toggleAnchorSafeKey;
+    private static KeyBinding toggleRotationKey;
     private static KeyBinding openGuiKey;
 
     @Override
@@ -77,6 +80,13 @@ public class AnchorAssist implements ClientModInitializer {
                 "category.anchorassist"
         ));
 
+        toggleRotationKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.anchorassist.rotationassist",
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_U,
+                "category.anchorassist"
+        ));
+
         openGuiKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.anchorassist.opengui",
                 InputUtil.Type.KEYSYM,
@@ -89,7 +99,7 @@ public class AnchorAssist implements ClientModInitializer {
             if (client.player == null || client.world == null) return;
 
             // =========================
-            // TOGGLE KEYS
+            // TOGGLES
             // =========================
             while (toggleHitKey.wasPressed()) {
                 autoHitEnabled = !autoHitEnabled;
@@ -111,18 +121,74 @@ public class AnchorAssist implements ClientModInitializer {
                 client.player.sendMessage(Text.literal("Anchor Safe: " + (anchorSafeEnabled ? "ON" : "OFF")), true);
             }
 
+            while (toggleRotationKey.wasPressed()) {
+                rotationAssistEnabled = !rotationAssistEnabled;
+                client.player.sendMessage(Text.literal("Rotation Assist: " + (rotationAssistEnabled ? "ON" : "OFF")), true);
+            }
+
             while (openGuiKey.wasPressed()) {
                 client.setScreen(new AnchorAssistScreen());
             }
 
             // =========================
-            // FEATURE CALLS
+            // FEATURES ORDER
             // =========================
+            if (rotationAssistEnabled) handleRotationAssist(client);
             if (autoHitEnabled) handleAutoHit(client);
             if (autoAnchorEnabled) handleAutoAnchor(client);
             if (anchorSafeEnabled) handleAnchorSafe(client);
             if (fastTotemEnabled) handleFastTotem(client);
         });
+    }
+
+    // =========================
+    // ROTATION ASSIST (SEMI LEGIT)
+    // =========================
+    private void handleRotationAssist(MinecraftClient mc) {
+
+        PlayerEntity player = mc.player;
+        PlayerEntity closest = null;
+        double closestDist = 3.1;
+
+        for (PlayerEntity other : mc.world.getPlayers()) {
+
+            if (other == player) continue;
+            if (other.isDead()) continue;
+
+            double dist = player.distanceTo(other);
+
+            if (dist < closestDist) {
+                closest = other;
+                closestDist = dist;
+            }
+        }
+
+        if (closest == null) return;
+
+        double dx = closest.getX() - player.getX();
+        double dy = closest.getEyeY() - player.getEyeY();
+        double dz = closest.getZ() - player.getZ();
+
+        double distXZ = Math.sqrt(dx * dx + dz * dz);
+
+        float targetYaw = (float)(Math.toDegrees(Math.atan2(dz, dx)) - 90F);
+        float targetPitch = (float)(-Math.toDegrees(Math.atan2(dy, distXZ)));
+
+        float yawDiff = MathHelper.wrapDegrees(targetYaw - player.getYaw());
+
+        if (Math.abs(yawDiff) > 35f) return; // FOV limit
+
+        float smooth = 0.15f;
+
+        float newYaw = player.getYaw() + yawDiff * smooth;
+        float pitchDiff = targetPitch - player.getPitch();
+        float newPitch = player.getPitch() + pitchDiff * smooth;
+
+        newYaw += (mc.world.random.nextFloat() - 0.5f) * 0.4f;
+        newPitch += (mc.world.random.nextFloat() - 0.5f) * 0.3f;
+
+        player.setYaw(newYaw);
+        player.setPitch(newPitch);
     }
 
     // =========================
@@ -144,7 +210,7 @@ public class AnchorAssist implements ClientModInitializer {
     }
 
     // =========================
-    // AUTO ANCHOR (1 CHARGE)
+    // AUTO ANCHOR
     // =========================
     private void handleAutoAnchor(MinecraftClient client) {
 
@@ -154,9 +220,7 @@ public class AnchorAssist implements ClientModInitializer {
 
         if (!(state.getBlock() instanceof RespawnAnchorBlock)) return;
 
-        int charges = state.get(RespawnAnchorBlock.CHARGES);
-
-        if (charges != 0) return;
+        if (state.get(RespawnAnchorBlock.CHARGES) != 0) return;
 
         for (int i = 0; i < 9; i++) {
             if (client.player.getInventory().getStack(i).getItem() == Items.GLOWSTONE) {
@@ -176,7 +240,7 @@ public class AnchorAssist implements ClientModInitializer {
     }
 
     // =========================
-    // ANCHOR SAFE + AUTO TOTEM
+    // ANCHOR SAFE
     // =========================
     private void handleAnchorSafe(MinecraftClient mc) {
 
@@ -190,8 +254,7 @@ public class AnchorAssist implements ClientModInitializer {
         int charges = mc.world.getBlockState(anchorPos)
                 .get(RespawnAnchorBlock.CHARGES);
 
-        if (charges < 1)
-            return;
+        if (charges < 1) return;
 
         if (mc.player.getMainHandStack().getItem() != Items.GLOWSTONE)
             return;
@@ -220,7 +283,6 @@ public class AnchorAssist implements ClientModInitializer {
         if (!mc.world.getBlockState(floor).isSolidBlock(mc.world, floor))
             return;
 
-        // PLACE SAFE BLOCK
         mc.interactionManager.interactBlock(
                 mc.player,
                 Hand.MAIN_HAND,
@@ -233,23 +295,10 @@ public class AnchorAssist implements ClientModInitializer {
         );
 
         mc.player.swingHand(Hand.MAIN_HAND);
-
-        // SWITCH TO TOTEM (PRIORITAS SLOT 7)
-        if (mc.player.getInventory().getStack(7).getItem() == Items.TOTEM_OF_UNDYING) {
-            mc.player.getInventory().selectedSlot = 7;
-            return;
-        }
-
-        for (int i = 0; i < 9; i++) {
-            if (mc.player.getInventory().getStack(i).getItem() == Items.TOTEM_OF_UNDYING) {
-                mc.player.getInventory().selectedSlot = i;
-                break;
-            }
-        }
     }
 
     // =========================
-    // FAST TOTEM (1.20.1)
+    // FAST TOTEM (1.20.1 INDEX)
     // =========================
     private void handleFastTotem(MinecraftClient client) {
 
