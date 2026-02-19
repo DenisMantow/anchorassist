@@ -1,10 +1,60 @@
 package com.anchorassist;
 
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.Items;
+import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.block.RespawnAnchorBlock;
+import net.minecraft.block.BlockState;
+import net.minecraft.screen.slot.SlotActionType;
 
 public class AnchorAssist implements ClientModInitializer {
+
     @Override
     public void onInitializeClient() {
-        System.out.println("[AnchorAssist] Loaded");
-    }
-}
+
+        ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            if (client.player == null || client.world == null) return;
+
+            // =========================
+            // AUTO HIT (NO SPAM, FULL DAMAGE)
+            // =========================
+            if (client.crosshairTarget instanceof EntityHitResult entityHit) {
+                if (entityHit.getEntity() instanceof PlayerEntity target) {
+
+                    double distance = client.player.distanceTo(target);
+
+                    // vanilla reach ±3 block
+                    if (distance <= 3.1D) {
+
+                        // attack cooldown full
+                        if (client.player.getAttackCooldownProgress(0.5f) >= 1.0f) {
+                            client.interactionManager.attackEntity(client.player, target);
+                            client.player.swingHand(Hand.MAIN_HAND);
+                        }
+                    }
+                }
+            }
+
+            // =========================
+            // AUTO FILL RESPAWN ANCHOR
+            // =========================
+            if (client.crosshairTarget instanceof BlockHitResult blockHit) {
+
+                BlockState state = client.world.getBlockState(blockHit.getBlockPos());
+
+                if (state.getBlock() instanceof RespawnAnchorBlock) {
+
+                    // Cari glowstone di inventory
+                    for (int i = 0; i < 9; i++) {
+
+                        if (client.player.getInventory().getStack(i).getItem() == Items.GLOWSTONE) {
+
+                            int previousSlot = client.player.getInventory().selectedSlot;
+
+                            //
