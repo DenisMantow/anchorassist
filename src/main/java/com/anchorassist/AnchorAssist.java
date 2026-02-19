@@ -11,7 +11,6 @@ import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.block.RespawnAnchorBlock;
 import net.minecraft.block.BlockState;
-import net.minecraft.screen.slot.SlotActionType;
 
 public class AnchorAssist implements ClientModInitializer {
 
@@ -19,23 +18,24 @@ public class AnchorAssist implements ClientModInitializer {
     public void onInitializeClient() {
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
+
             if (client.player == null || client.world == null) return;
 
             // =========================
-    }       // AUTO HIT (NO SPAM, FULL DAMAGE)
-}           // =========================
+            // AUTO HIT (FULL COOLDOWN)
+            // =========================
             if (client.crosshairTarget instanceof EntityHitResult entityHit) {
                 if (entityHit.getEntity() instanceof PlayerEntity target) {
 
                     double distance = client.player.distanceTo(target);
 
-                    // vanilla reach ±3 block
                     if (distance <= 3.1D) {
 
-                        // attack cooldown full
                         if (client.player.getAttackCooldownProgress(0.5f) >= 1.0f) {
+
                             client.interactionManager.attackEntity(client.player, target);
                             client.player.swingHand(Hand.MAIN_HAND);
+
                         }
                     }
                 }
@@ -50,11 +50,28 @@ public class AnchorAssist implements ClientModInitializer {
 
                 if (state.getBlock() instanceof RespawnAnchorBlock) {
 
-                    // Cari glowstone di inventory
                     for (int i = 0; i < 9; i++) {
 
                         if (client.player.getInventory().getStack(i).getItem() == Items.GLOWSTONE) {
 
                             int previousSlot = client.player.getInventory().selectedSlot;
 
-                            //
+                            client.player.getInventory().selectedSlot = i;
+
+                            client.interactionManager.interactBlock(
+                                    client.player,
+                                    Hand.MAIN_HAND,
+                                    blockHit
+                            );
+
+                            client.player.getInventory().selectedSlot = previousSlot;
+
+                            break;
+                        }
+                    }
+                }
+            }
+
+        });
+    }
+}
