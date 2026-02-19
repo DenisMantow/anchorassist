@@ -1,7 +1,5 @@
 package com.anchorassist;
 
-import com.anchorassist.AnchorAssistScreen;
-
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
@@ -90,17 +88,9 @@ public class AnchorAssist implements ClientModInitializer {
                 client.setScreen(new AnchorAssistScreen());
             }
 
-            if (autoHitEnabled) {
-                handleAutoHit(client);
-            }
-
-            if (autoAnchorEnabled) {
-                handleAutoAnchor(client);
-            }
-
-            if (fastTotemEnabled) {
-                handleFastTotem(client);
-            }
+            if (autoHitEnabled) handleAutoHit(client);
+            if (autoAnchorEnabled) handleAutoAnchor(client);
+            if (fastTotemEnabled) handleFastTotem(client);
         });
     }
 
@@ -137,7 +127,6 @@ public class AnchorAssist implements ClientModInitializer {
 
         int charges = state.get(RespawnAnchorBlock.CHARGES);
 
-        // Hanya isi jika kosong
         if (charges != 0) return;
 
         for (int i = 0; i < 9; i++) {
@@ -159,16 +148,24 @@ public class AnchorAssist implements ClientModInitializer {
 
     // =========================
     // FAST TOTEM
-    // PRIORITAS: SLOT 8 → OFFHAND
+    // Index System:
+    // 0–8   = Hotbar
+    // 9–35  = Inventory
+    // 36–39 = Armor
+    // 40    = Offhand
     // =========================
     private void handleFastTotem(MinecraftClient client) {
 
         if (!(client.currentScreen instanceof InventoryScreen))
             return;
 
+        if (client.player == null)
+            return;
+
         int totemSlot = -1;
 
-        for (int i = 0; i < 36; i++) {
+        // Cari totem hanya di 0–35 (jangan armor & offhand)
+        for (int i = 0; i <= 35; i++) {
             if (client.player.getInventory().getStack(i).getItem() == Items.TOTEM_OF_UNDYING) {
                 totemSlot = i;
                 break;
@@ -178,13 +175,15 @@ public class AnchorAssist implements ClientModInitializer {
         if (totemSlot == -1)
             return;
 
-        // PRIORITAS 1 → SLOT 8
-        if (client.player.getInventory().getStack(8).isEmpty()) {
+        // =========================
+        // PRIORITAS 1 → SLOT 7
+        // =========================
+        if (client.player.getInventory().getStack(7).isEmpty()) {
 
             client.interactionManager.clickSlot(
                     client.player.currentScreenHandler.syncId,
                     totemSlot,
-                    8,
+                    7,
                     SlotActionType.SWAP,
                     client.player
             );
@@ -192,8 +191,10 @@ public class AnchorAssist implements ClientModInitializer {
             return;
         }
 
-        // PRIORITAS 2 → OFFHAND
-        if (client.player.getOffHandStack().isEmpty()) {
+        // =========================
+        // PRIORITAS 2 → OFFHAND (40)
+        // =========================
+        if (client.player.getInventory().getStack(40).isEmpty()) {
 
             client.interactionManager.clickSlot(
                     client.player.currentScreenHandler.syncId,
