@@ -88,7 +88,9 @@ public class AnchorAssist implements ClientModInitializer {
 
             if (client.player == null || client.world == null) return;
 
-            // Toggle Keys
+            // =========================
+            // TOGGLE KEYS
+            // =========================
             while (toggleHitKey.wasPressed()) {
                 autoHitEnabled = !autoHitEnabled;
                 client.player.sendMessage(Text.literal("Auto Hit: " + (autoHitEnabled ? "ON" : "OFF")), true);
@@ -113,7 +115,9 @@ public class AnchorAssist implements ClientModInitializer {
                 client.setScreen(new AnchorAssistScreen());
             }
 
-            // Feature Calls
+            // =========================
+            // FEATURE CALLS
+            // =========================
             if (autoHitEnabled) handleAutoHit(client);
             if (autoAnchorEnabled) handleAutoAnchor(client);
             if (anchorSafeEnabled) handleAnchorSafe(client);
@@ -172,7 +176,7 @@ public class AnchorAssist implements ClientModInitializer {
     }
 
     // =========================
-    // ANCHOR SAFE (1–3 BLOCK)
+    // ANCHOR SAFE + AUTO TOTEM
     // =========================
     private void handleAnchorSafe(MinecraftClient mc) {
 
@@ -216,6 +220,7 @@ public class AnchorAssist implements ClientModInitializer {
         if (!mc.world.getBlockState(floor).isSolidBlock(mc.world, floor))
             return;
 
+        // PLACE SAFE BLOCK
         mc.interactionManager.interactBlock(
                 mc.player,
                 Hand.MAIN_HAND,
@@ -228,6 +233,19 @@ public class AnchorAssist implements ClientModInitializer {
         );
 
         mc.player.swingHand(Hand.MAIN_HAND);
+
+        // SWITCH TO TOTEM (PRIORITAS SLOT 7)
+        if (mc.player.getInventory().getStack(7).getItem() == Items.TOTEM_OF_UNDYING) {
+            mc.player.getInventory().selectedSlot = 7;
+            return;
+        }
+
+        for (int i = 0; i < 9; i++) {
+            if (mc.player.getInventory().getStack(i).getItem() == Items.TOTEM_OF_UNDYING) {
+                mc.player.getInventory().selectedSlot = i;
+                break;
+            }
+        }
     }
 
     // =========================
@@ -254,7 +272,6 @@ public class AnchorAssist implements ClientModInitializer {
 
         if (containerTotemSlot == -1) return;
 
-        // SLOT 7 = 43
         int slot7Container = 43;
 
         if (client.player.currentScreenHandler
@@ -272,7 +289,6 @@ public class AnchorAssist implements ClientModInitializer {
             return;
         }
 
-        // OFFHAND = 45
         int offhandContainer = 45;
 
         if (client.player.currentScreenHandler
