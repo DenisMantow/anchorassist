@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "anchorassist",
+  "version": "1.0.0",
+  "name": "AnchorAssist",
+  "description": "Anchor auto glowstone & crosshair hit assist",
+  "authors": ["You"],
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["com.anchorassist.AnchorAssist"]
+  },
+  "depends": {
+    "fabricloader": ">=0.15.7",
+    "minecraft": "1.20.1",
+    "fabric": "*"
+  }
+}
