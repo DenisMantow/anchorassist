@@ -193,9 +193,6 @@ public class AnchorAssist implements ClientModInitializer {
         if (charges < 1)
             return;
 
-        if (mc.player.getMainHandStack().getItem() != Items.GLOWSTONE)
-            return;
-
         Vec3d playerPos = mc.player.getPos();
         Vec3d anchorCenter = Vec3d.ofCenter(anchorPos);
 
@@ -220,6 +217,19 @@ public class AnchorAssist implements ClientModInitializer {
         if (!mc.world.getBlockState(floor).isSolidBlock(mc.world, floor))
             return;
 
+        // SWITCH KE GLOWSTONE
+        int glowSlot = -1;
+        for (int i = 0; i < 9; i++) {
+            if (mc.player.getInventory().getStack(i).getItem() == Items.GLOWSTONE) {
+                glowSlot = i;
+                break;
+            }
+        }
+
+        if (glowSlot == -1) return;
+
+        mc.player.getInventory().selectedSlot = glowSlot;
+
         // PLACE SAFE BLOCK
         mc.interactionManager.interactBlock(
                 mc.player,
@@ -234,7 +244,7 @@ public class AnchorAssist implements ClientModInitializer {
 
         mc.player.swingHand(Hand.MAIN_HAND);
 
-        // SWITCH TO TOTEM (PRIORITAS SLOT 7)
+        // SWITCH KE TOTEM
         if (mc.player.getInventory().getStack(7).getItem() == Items.TOTEM_OF_UNDYING) {
             mc.player.getInventory().selectedSlot = 7;
             return;
