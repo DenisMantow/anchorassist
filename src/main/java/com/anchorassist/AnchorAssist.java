@@ -22,8 +22,8 @@ public class AnchorAssist implements ClientModInitializer {
             if (client.player == null || client.world == null) return;
 
             // =========================
-            // AUTO HIT (NO SPAM, FULL DAMAGE)
-            // =========================
+    }       // AUTO HIT (NO SPAM, FULL DAMAGE)
+}           // =========================
             if (client.crosshairTarget instanceof EntityHitResult entityHit) {
                 if (entityHit.getEntity() instanceof PlayerEntity target) {
 
