@@ -9,8 +9,8 @@ import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.gui.screen.ingame.InventoryScreen;
+
 import net.minecraft.text.Text;
 
 import net.minecraft.entity.player.PlayerEntity;
@@ -21,15 +21,19 @@ import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.block.RespawnAnchorBlock;
 import net.minecraft.block.BlockState;
 
+import net.minecraft.screen.slot.SlotActionType;
+
 import org.lwjgl.glfw.GLFW;
 
 public class AnchorAssist implements ClientModInitializer {
 
     public static boolean autoHitEnabled = true;
     public static boolean autoAnchorEnabled = true;
+    public static boolean fastTotemEnabled = true;
 
     private static KeyBinding toggleHitKey;
     private static KeyBinding toggleAnchorKey;
+    private static KeyBinding toggleTotemKey;
     private static KeyBinding openGuiKey;
 
     @Override
@@ -46,6 +50,13 @@ public class AnchorAssist implements ClientModInitializer {
                 "key.anchorassist.toggleanchor",
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_G,
+                "category.anchorassist"
+        ));
+
+        toggleTotemKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.anchorassist.toggletotem",
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_T,
                 "category.anchorassist"
         ));
 
@@ -70,6 +81,11 @@ public class AnchorAssist implements ClientModInitializer {
                 client.player.sendMessage(Text.literal("Auto Anchor: " + (autoAnchorEnabled ? "ON" : "OFF")), true);
             }
 
+            while (toggleTotemKey.wasPressed()) {
+                fastTotemEnabled = !fastTotemEnabled;
+                client.player.sendMessage(Text.literal("Fast Totem: " + (fastTotemEnabled ? "ON" : "OFF")), true);
+            }
+
             while (openGuiKey.wasPressed()) {
                 client.setScreen(new AnchorAssistScreen());
             }
@@ -82,9 +98,15 @@ public class AnchorAssist implements ClientModInitializer {
                 handleAutoAnchor(client);
             }
 
+            if (fastTotemEnabled) {
+                handleFastTotem(client);
+            }
         });
     }
 
+    // =========================
+    // AUTO HIT
+    // =========================
     private void handleAutoHit(MinecraftClient client) {
 
         if (client.crosshairTarget instanceof EntityHitResult entityHit) {
@@ -102,6 +124,9 @@ public class AnchorAssist implements ClientModInitializer {
         }
     }
 
+    // =========================
+    // AUTO ANCHOR (1 CHARGE ONLY)
+    // =========================
     private void handleAutoAnchor(MinecraftClient client) {
 
         if (!(client.crosshairTarget instanceof BlockHitResult blockHit)) return;
@@ -112,7 +137,7 @@ public class AnchorAssist implements ClientModInitializer {
 
         int charges = state.get(RespawnAnchorBlock.CHARGES);
 
-        // HANYA isi jika kosong
+        // Hanya isi jika kosong
         if (charges != 0) return;
 
         for (int i = 0; i < 9; i++) {
@@ -129,6 +154,54 @@ public class AnchorAssist implements ClientModInitializer {
                 client.player.swingHand(Hand.MAIN_HAND);
                 break;
             }
+        }
+    }
+
+    // =========================
+    // FAST TOTEM
+    // PRIORITAS: SLOT 8 → OFFHAND
+    // =========================
+    private void handleFastTotem(MinecraftClient client) {
+
+        if (!(client.currentScreen instanceof InventoryScreen))
+            return;
+
+        int totemSlot = -1;
+
+        for (int i = 0; i < 36; i++) {
+            if (client.player.getInventory().getStack(i).getItem() == Items.TOTEM_OF_UNDYING) {
+                totemSlot = i;
+                break;
+            }
+        }
+
+        if (totemSlot == -1)
+            return;
+
+        // PRIORITAS 1 → SLOT 8
+        if (client.player.getInventory().getStack(8).isEmpty()) {
+
+            client.interactionManager.clickSlot(
+                    client.player.currentScreenHandler.syncId,
+                    totemSlot,
+                    8,
+                    SlotActionType.SWAP,
+                    client.player
+            );
+
+            return;
+        }
+
+        // PRIORITAS 2 → OFFHAND
+        if (client.player.getOffHandStack().isEmpty()) {
+
+            client.interactionManager.clickSlot(
+                    client.player.currentScreenHandler.syncId,
+                    totemSlot,
+                    40,
+                    SlotActionType.SWAP,
+                    client.player
+            );
         }
     }
 }
