@@ -16,6 +16,10 @@ import net.minecraft.item.Items;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
+
 import net.minecraft.block.RespawnAnchorBlock;
 import net.minecraft.block.BlockState;
 
@@ -25,13 +29,21 @@ import org.lwjgl.glfw.GLFW;
 
 public class AnchorAssist implements ClientModInitializer {
 
+    // =========================
+    // TOGGLES
+    // =========================
     public static boolean autoHitEnabled = true;
     public static boolean autoAnchorEnabled = true;
     public static boolean fastTotemEnabled = true;
+    public static boolean anchorSafeEnabled = true;
 
+    // =========================
+    // KEYBINDS
+    // =========================
     private static KeyBinding toggleHitKey;
     private static KeyBinding toggleAnchorKey;
     private static KeyBinding toggleTotemKey;
+    private static KeyBinding toggleAnchorSafeKey;
     private static KeyBinding openGuiKey;
 
     @Override
@@ -58,6 +70,13 @@ public class AnchorAssist implements ClientModInitializer {
                 "category.anchorassist"
         ));
 
+        toggleAnchorSafeKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.anchorassist.anchorsafe",
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_Y,
+                "category.anchorassist"
+        ));
+
         openGuiKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.anchorassist.opengui",
                 InputUtil.Type.KEYSYM,
@@ -69,6 +88,7 @@ public class AnchorAssist implements ClientModInitializer {
 
             if (client.player == null || client.world == null) return;
 
+            // Toggle Keys
             while (toggleHitKey.wasPressed()) {
                 autoHitEnabled = !autoHitEnabled;
                 client.player.sendMessage(Text.literal("Auto Hit: " + (autoHitEnabled ? "ON" : "OFF")), true);
@@ -84,12 +104,19 @@ public class AnchorAssist implements ClientModInitializer {
                 client.player.sendMessage(Text.literal("Fast Totem: " + (fastTotemEnabled ? "ON" : "OFF")), true);
             }
 
+            while (toggleAnchorSafeKey.wasPressed()) {
+                anchorSafeEnabled = !anchorSafeEnabled;
+                client.player.sendMessage(Text.literal("Anchor Safe: " + (anchorSafeEnabled ? "ON" : "OFF")), true);
+            }
+
             while (openGuiKey.wasPressed()) {
                 client.setScreen(new AnchorAssistScreen());
             }
 
+            // Feature Calls
             if (autoHitEnabled) handleAutoHit(client);
             if (autoAnchorEnabled) handleAutoAnchor(client);
+            if (anchorSafeEnabled) handleAnchorSafe(client);
             if (fastTotemEnabled) handleFastTotem(client);
         });
     }
@@ -102,9 +129,7 @@ public class AnchorAssist implements ClientModInitializer {
         if (client.crosshairTarget instanceof EntityHitResult entityHit) {
             if (entityHit.getEntity() instanceof PlayerEntity target) {
 
-                double distance = client.player.distanceTo(target);
-
-                if (distance <= 3.1D) {
+                if (client.player.distanceTo(target) <= 3.1D) {
                     if (client.player.getAttackCooldownProgress(0.5f) >= 1.0f) {
                         client.interactionManager.attackEntity(client.player, target);
                         client.player.swingHand(Hand.MAIN_HAND);
@@ -115,7 +140,7 @@ public class AnchorAssist implements ClientModInitializer {
     }
 
     // =========================
-    // AUTO ANCHOR (1 CHARGE ONLY)
+    // AUTO ANCHOR (1 CHARGE)
     // =========================
     private void handleAutoAnchor(MinecraftClient client) {
 
@@ -147,30 +172,75 @@ public class AnchorAssist implements ClientModInitializer {
     }
 
     // =========================
-    // FAST TOTEM
-    // Minecraft 1.20.1 Container Index
-    //
-    // 9–35  = Main Inventory
-    // 36–44 = Hotbar (0–8)
-    // 45    = Offhand
-    //
-    // Slot 7 (hotbar) = 36 + 7 = 43
+    // ANCHOR SAFE (1–3 BLOCK)
+    // =========================
+    private void handleAnchorSafe(MinecraftClient mc) {
+
+        if (!(mc.crosshairTarget instanceof BlockHitResult blockHit)) return;
+
+        BlockPos anchorPos = blockHit.getBlockPos();
+
+        if (!(mc.world.getBlockState(anchorPos).getBlock() instanceof RespawnAnchorBlock))
+            return;
+
+        int charges = mc.world.getBlockState(anchorPos)
+                .get(RespawnAnchorBlock.CHARGES);
+
+        if (charges < 1)
+            return;
+
+        if (mc.player.getMainHandStack().getItem() != Items.GLOWSTONE)
+            return;
+
+        Vec3d playerPos = mc.player.getPos();
+        Vec3d anchorCenter = Vec3d.ofCenter(anchorPos);
+
+        double dx = playerPos.x - anchorCenter.x;
+        double dz = playerPos.z - anchorCenter.z;
+
+        double distance = Math.sqrt(dx * dx + dz * dz);
+
+        if (distance < 1.2 || distance > 3.0)
+            return;
+
+        Direction dir = Direction.getFacing(dx, 0, dz);
+        if (dir.getAxis().isVertical()) return;
+
+        BlockPos safePos = anchorPos.offset(dir);
+
+        if (!mc.world.getBlockState(safePos).isAir())
+            return;
+
+        BlockPos floor = safePos.down();
+
+        if (!mc.world.getBlockState(floor).isSolidBlock(mc.world, floor))
+            return;
+
+        mc.interactionManager.interactBlock(
+                mc.player,
+                Hand.MAIN_HAND,
+                new BlockHitResult(
+                        Vec3d.ofCenter(floor),
+                        Direction.UP,
+                        floor,
+                        false
+                )
+        );
+
+        mc.player.swingHand(Hand.MAIN_HAND);
+    }
+
+    // =========================
+    // FAST TOTEM (1.20.1)
     // =========================
     private void handleFastTotem(MinecraftClient client) {
 
-        if (!(client.currentScreen instanceof InventoryScreen))
-            return;
-
-        if (client.player == null)
-            return;
-
-        if (client.player.currentScreenHandler == null)
-            return;
+        if (!(client.currentScreen instanceof InventoryScreen)) return;
+        if (client.player.currentScreenHandler == null) return;
 
         int syncId = client.player.currentScreenHandler.syncId;
         int containerTotemSlot = -1;
 
-        // Scan main inventory + hotbar only
         for (int i = 9; i <= 44; i++) {
             if (client.player.currentScreenHandler
                     .getSlot(i)
@@ -182,12 +252,9 @@ public class AnchorAssist implements ClientModInitializer {
             }
         }
 
-        if (containerTotemSlot == -1)
-            return;
+        if (containerTotemSlot == -1) return;
 
-        // =====================
-        // PRIORITAS 1 → SLOT 7
-        // =====================
+        // SLOT 7 = 43
         int slot7Container = 43;
 
         if (client.player.currentScreenHandler
@@ -198,17 +265,14 @@ public class AnchorAssist implements ClientModInitializer {
             client.interactionManager.clickSlot(
                     syncId,
                     containerTotemSlot,
-                    7, // hotbar index
+                    7,
                     SlotActionType.SWAP,
                     client.player
             );
-
             return;
         }
 
-        // =====================
-        // PRIORITAS 2 → OFFHAND
-        // =====================
+        // OFFHAND = 45
         int offhandContainer = 45;
 
         if (client.player.currentScreenHandler
@@ -219,7 +283,7 @@ public class AnchorAssist implements ClientModInitializer {
             client.interactionManager.clickSlot(
                     syncId,
                     containerTotemSlot,
-                    40, // offhand button index
+                    40,
                     SlotActionType.SWAP,
                     client.player
             );
