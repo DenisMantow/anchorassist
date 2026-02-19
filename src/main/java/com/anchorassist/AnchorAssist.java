@@ -148,11 +148,13 @@ public class AnchorAssist implements ClientModInitializer {
 
     // =========================
     // FAST TOTEM
-    // Index System:
-    // 0–8   = Hotbar
-    // 9–35  = Inventory
-    // 36–39 = Armor
-    // 40    = Offhand
+    // Minecraft 1.20.1 Container Index
+    //
+    // 9–35  = Main Inventory
+    // 36–44 = Hotbar (0–8)
+    // 45    = Offhand
+    //
+    // Slot 7 (hotbar) = 36 + 7 = 43
     // =========================
     private void handleFastTotem(MinecraftClient client) {
 
@@ -162,28 +164,41 @@ public class AnchorAssist implements ClientModInitializer {
         if (client.player == null)
             return;
 
-        int totemSlot = -1;
+        if (client.player.currentScreenHandler == null)
+            return;
 
-        // Cari totem hanya di 0–35 (jangan armor & offhand)
-        for (int i = 0; i <= 35; i++) {
-            if (client.player.getInventory().getStack(i).getItem() == Items.TOTEM_OF_UNDYING) {
-                totemSlot = i;
+        int syncId = client.player.currentScreenHandler.syncId;
+        int containerTotemSlot = -1;
+
+        // Scan main inventory + hotbar only
+        for (int i = 9; i <= 44; i++) {
+            if (client.player.currentScreenHandler
+                    .getSlot(i)
+                    .getStack()
+                    .getItem() == Items.TOTEM_OF_UNDYING) {
+
+                containerTotemSlot = i;
                 break;
             }
         }
 
-        if (totemSlot == -1)
+        if (containerTotemSlot == -1)
             return;
 
-        // =========================
+        // =====================
         // PRIORITAS 1 → SLOT 7
-        // =========================
-        if (client.player.getInventory().getStack(7).isEmpty()) {
+        // =====================
+        int slot7Container = 43;
+
+        if (client.player.currentScreenHandler
+                .getSlot(slot7Container)
+                .getStack()
+                .isEmpty()) {
 
             client.interactionManager.clickSlot(
-                    client.player.currentScreenHandler.syncId,
-                    totemSlot,
-                    7,
+                    syncId,
+                    containerTotemSlot,
+                    7, // hotbar index
                     SlotActionType.SWAP,
                     client.player
             );
@@ -191,15 +206,20 @@ public class AnchorAssist implements ClientModInitializer {
             return;
         }
 
-        // =========================
-        // PRIORITAS 2 → OFFHAND (40)
-        // =========================
-        if (client.player.getInventory().getStack(40).isEmpty()) {
+        // =====================
+        // PRIORITAS 2 → OFFHAND
+        // =====================
+        int offhandContainer = 45;
+
+        if (client.player.currentScreenHandler
+                .getSlot(offhandContainer)
+                .getStack()
+                .isEmpty()) {
 
             client.interactionManager.clickSlot(
-                    client.player.currentScreenHandler.syncId,
-                    totemSlot,
-                    40,
+                    syncId,
+                    containerTotemSlot,
+                    40, // offhand button index
                     SlotActionType.SWAP,
                     client.player
             );
