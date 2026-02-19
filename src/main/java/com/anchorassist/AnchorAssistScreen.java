@@ -2,7 +2,9 @@ package com.anchorassist;
 
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 
 public class AnchorAssistScreen extends Screen {
 
@@ -16,16 +18,20 @@ public class AnchorAssistScreen extends Screen {
         int centerX = this.width / 2;
         int centerY = this.height / 2;
 
+        int buttonWidth = 180;
+        int buttonHeight = 20;
+        int spacing = 28;
+
         // =========================
         // AUTO HIT
         // =========================
         this.addDrawableChild(ButtonWidget.builder(
-                Text.literal("Auto Hit: " + (AnchorAssist.autoHitEnabled ? "ON" : "OFF")),
+                getToggleText("Auto Hit", AnchorAssist.autoHitEnabled),
                 button -> {
                     AnchorAssist.autoHitEnabled = !AnchorAssist.autoHitEnabled;
-                    button.setMessage(Text.literal("Auto Hit: " + (AnchorAssist.autoHitEnabled ? "ON" : "OFF")));
+                    button.setMessage(getToggleText("Auto Hit", AnchorAssist.autoHitEnabled));
                 })
-                .dimensions(centerX - 75, centerY - 40, 150, 20)
+                .dimensions(centerX - buttonWidth / 2, centerY - spacing * 2, buttonWidth, buttonHeight)
                 .build()
         );
 
@@ -33,12 +39,25 @@ public class AnchorAssistScreen extends Screen {
         // AUTO ANCHOR
         // =========================
         this.addDrawableChild(ButtonWidget.builder(
-                Text.literal("Auto Anchor: " + (AnchorAssist.autoAnchorEnabled ? "ON" : "OFF")),
+                getToggleText("Auto Anchor", AnchorAssist.autoAnchorEnabled),
                 button -> {
                     AnchorAssist.autoAnchorEnabled = !AnchorAssist.autoAnchorEnabled;
-                    button.setMessage(Text.literal("Auto Anchor: " + (AnchorAssist.autoAnchorEnabled ? "ON" : "OFF")));
+                    button.setMessage(getToggleText("Auto Anchor", AnchorAssist.autoAnchorEnabled));
                 })
-                .dimensions(centerX - 75, centerY - 10, 150, 20)
+                .dimensions(centerX - buttonWidth / 2, centerY - spacing, buttonWidth, buttonHeight)
+                .build()
+        );
+
+        // =========================
+        // ANCHOR SAFE
+        // =========================
+        this.addDrawableChild(ButtonWidget.builder(
+                getToggleText("Anchor Safe", AnchorAssist.anchorSafeEnabled),
+                button -> {
+                    AnchorAssist.anchorSafeEnabled = !AnchorAssist.anchorSafeEnabled;
+                    button.setMessage(getToggleText("Anchor Safe", AnchorAssist.anchorSafeEnabled));
+                })
+                .dimensions(centerX - buttonWidth / 2, centerY, buttonWidth, buttonHeight)
                 .build()
         );
 
@@ -46,13 +65,53 @@ public class AnchorAssistScreen extends Screen {
         // FAST TOTEM
         // =========================
         this.addDrawableChild(ButtonWidget.builder(
-                Text.literal("Fast Totem: " + (AnchorAssist.fastTotemEnabled ? "ON" : "OFF")),
+                getToggleText("Fast Totem", AnchorAssist.fastTotemEnabled),
                 button -> {
                     AnchorAssist.fastTotemEnabled = !AnchorAssist.fastTotemEnabled;
-                    button.setMessage(Text.literal("Fast Totem: " + (AnchorAssist.fastTotemEnabled ? "ON" : "OFF")));
+                    button.setMessage(getToggleText("Fast Totem", AnchorAssist.fastTotemEnabled));
                 })
-                .dimensions(centerX - 75, centerY + 20, 150, 20)
+                .dimensions(centerX - buttonWidth / 2, centerY + spacing, buttonWidth, buttonHeight)
                 .build()
+        );
+    }
+
+    // =========================
+    // TEXT STYLE (Modern ON/OFF)
+    // =========================
+    private Text getToggleText(String name, boolean enabled) {
+        return Text.literal(name + ": ")
+                .append(enabled
+                        ? Text.literal("ON").formatted(Formatting.GREEN)
+                        : Text.literal("OFF").formatted(Formatting.RED)
+                );
+    }
+
+    // =========================
+    // TITLE + KEYBINDS INFO
+    // =========================
+    @Override
+    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+
+        this.renderBackground(context);
+        super.render(context, mouseX, mouseY, delta);
+
+        int centerX = this.width / 2;
+
+        context.drawCenteredTextWithShadow(
+                this.textRenderer,
+                Text.literal("Anchor Assist").formatted(Formatting.AQUA, Formatting.BOLD),
+                centerX,
+                30,
+                0xFFFFFF
+        );
+
+        context.drawCenteredTextWithShadow(
+                this.textRenderer,
+                Text.literal("R = Hit | G = Anchor | Y = Safe | T = Totem | Shift = GUI")
+                        .formatted(Formatting.GRAY),
+                centerX,
+                45,
+                0xFFFFFF
         );
     }
 
