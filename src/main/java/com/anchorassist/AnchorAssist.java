@@ -15,7 +15,6 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.decoration.EndCrystalEntity;
 
 import net.minecraft.item.Items;
-import net.minecraft.item.Item;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.EntityHitResult;
@@ -25,7 +24,6 @@ import net.minecraft.util.math.Vec3d;
 
 import net.minecraft.block.RespawnAnchorBlock;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
 
 import net.minecraft.screen.slot.SlotActionType;
 
@@ -43,13 +41,9 @@ public class AnchorAssist implements ClientModInitializer {
 
     public static boolean smartCrystalBreakEnabled = true;
     public static boolean autoShieldBreakEnabled = true;
-    public static boolean crystalOptimizerEnabled = true;
 
-    // =========================
-    // CRYSTAL OPTIMIZER
-    // =========================
-    private int crystalPlaceDelay = 0;
-    private final int MAX_CRYSTAL_DELAY = 4;
+    // NEW
+    public static boolean crystalOptimizerV2Enabled = true;
 
     // =========================
     // KEYBINDS
@@ -61,7 +55,8 @@ public class AnchorAssist implements ClientModInitializer {
     private static KeyBinding openGuiKey;
     private static KeyBinding smartCrystalKey;
     private static KeyBinding autoShieldKey;
-    private static KeyBinding crystalOptimizerKey;
+
+    private static KeyBinding crystalOptimizerV2Key; // NEW
 
     @Override
     public void onInitializeClient() {
@@ -71,10 +66,10 @@ public class AnchorAssist implements ClientModInitializer {
         toggleTotemKey = register("toggletotem", GLFW.GLFW_KEY_T);
         toggleAnchorSafeKey = register("anchorsafe", GLFW.GLFW_KEY_Y);
         openGuiKey = register("opengui", GLFW.GLFW_KEY_RIGHT_SHIFT);
-
         smartCrystalKey = register("smartcrystal", GLFW.GLFW_KEY_X);
         autoShieldKey = register("autoshield", GLFW.GLFW_KEY_Z);
-        crystalOptimizerKey = register("crystaloptimizer", GLFW.GLFW_KEY_C);
+
+        crystalOptimizerV2Key = register("crystaloptv2", GLFW.GLFW_KEY_B);
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
 
@@ -88,10 +83,13 @@ public class AnchorAssist implements ClientModInitializer {
             if (fastTotemEnabled) handleFastTotem(client);
             if (smartCrystalBreakEnabled) handleSmartCrystalBreak(client);
             if (autoShieldBreakEnabled) handleAutoShieldBreak(client);
-            if (crystalOptimizerEnabled) handleCrystalOptimizer(client);
+            if (crystalOptimizerV2Enabled) handleCrystalOptimizerV2(client);
         });
     }
 
+    // =========================
+    // KEY REGISTER
+    // =========================
     private KeyBinding register(String name, int key) {
         return KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.anchorassist." + name,
@@ -121,8 +119,8 @@ public class AnchorAssist implements ClientModInitializer {
         while (autoShieldKey.wasPressed())
             autoShieldBreakEnabled = toggle(client, autoShieldBreakEnabled, "Auto Shield Break");
 
-        while (crystalOptimizerKey.wasPressed())
-            crystalOptimizerEnabled = toggle(client, crystalOptimizerEnabled, "Crystal Optimizer");
+        while (crystalOptimizerV2Key.wasPressed())
+            crystalOptimizerV2Enabled = toggle(client, crystalOptimizerV2Enabled, "Crystal Optimizer V2");
 
         while (openGuiKey.wasPressed())
             client.setScreen(new AnchorAssistScreen());
@@ -132,6 +130,35 @@ public class AnchorAssist implements ClientModInitializer {
         boolean newValue = !value;
         client.player.sendMessage(Text.literal(name + ": " + (newValue ? "ON" : "OFF")), true);
         return newValue;
+    }
+
+    // =========================
+    // CRYSTAL OPTIMIZER V2 (MANUAL SMOOTH)
+    // =========================
+    private void handleCrystalOptimizerV2(MinecraftClient client) {
+
+        if (client.player.getMainHandStack().getItem() != Items.END_CRYSTAL)
+            return;
+
+        // Remove ghost crystals instantly
+        client.world.getEntities().forEach(entity -> {
+            if (entity instanceof EndCrystalEntity crystal) {
+                if (!crystal.isAlive()) {
+                    crystal.discard();
+                }
+            }
+        });
+
+        // Ignore crystal hitbox blocking placement
+        if (client.crosshairTarget instanceof EntityHitResult hit &&
+                hit.getEntity() instanceof EndCrystalEntity) {
+            client.crosshairTarget = null;
+        }
+
+        // Smooth swing sync
+        if (client.options.useKey.isPressed()) {
+            client.player.swingHand(Hand.MAIN_HAND);
+        }
     }
 
     // =========================
@@ -189,7 +216,7 @@ public class AnchorAssist implements ClientModInitializer {
     }
 
     // =========================
-    // AUTO ANCHOR (GLOWSTONE SWAP)
+    // AUTO ANCHOR
     // =========================
     private void handleAutoAnchor(MinecraftClient client) {
 
@@ -204,12 +231,7 @@ public class AnchorAssist implements ClientModInitializer {
 
         client.player.getInventory().selectedSlot = glowSlot;
 
-        client.interactionManager.interactBlock(
-                client.player,
-                Hand.MAIN_HAND,
-                hit
-        );
-
+        client.interactionManager.interactBlock(client.player, Hand.MAIN_HAND, hit);
         client.player.swingHand(Hand.MAIN_HAND);
     }
 
@@ -264,7 +286,7 @@ public class AnchorAssist implements ClientModInitializer {
     }
 
     // =========================
-    // FAST TOTEM (MANUAL CLOSE)
+    // FAST TOTEM
     // =========================
     private void handleFastTotem(MinecraftClient client) {
 
@@ -311,54 +333,7 @@ public class AnchorAssist implements ClientModInitializer {
         }
     }
 
-    // =========================
-    // CRYSTAL OPTIMIZER
-    // =========================
-    private void handleCrystalOptimizer(MinecraftClient client) {
-
-        if (!(client.crosshairTarget instanceof BlockHitResult hit)) return;
-
-        BlockPos pos = hit.getBlockPos();
-        BlockState state = client.world.getBlockState(pos);
-
-        if (!state.isOf(Blocks.OBSIDIAN) && !state.isOf(Blocks.BEDROCK))
-            return;
-
-        if (!client.world.getBlockState(pos.up()).isAir()) return;
-        if (!client.world.getBlockState(pos.up(2)).isAir()) return;
-
-        if (client.player.squaredDistanceTo(Vec3d.ofCenter(pos)) > 25)
-            return;
-
-        if (crystalPlaceDelay > 0) {
-            crystalPlaceDelay--;
-            return;
-        }
-
-        int crystalSlot = findHotbarItem(Items.END_CRYSTAL, client);
-        if (crystalSlot == -1) return;
-
-        int oldSlot = client.player.getInventory().selectedSlot;
-
-        client.player.getInventory().selectedSlot = crystalSlot;
-
-        client.interactionManager.interactBlock(
-                client.player,
-                Hand.MAIN_HAND,
-                hit
-        );
-
-        client.player.swingHand(Hand.MAIN_HAND);
-
-        crystalPlaceDelay = MAX_CRYSTAL_DELAY;
-
-        client.player.getInventory().selectedSlot = oldSlot;
-    }
-
-    // =========================
-    // UTIL
-    // =========================
-    private int findHotbarItem(Item item, MinecraftClient client) {
+    private int findHotbarItem(net.minecraft.item.Item item, MinecraftClient client) {
         for (int i = 0; i < 9; i++) {
             if (client.player.getInventory().getStack(i).getItem() == item)
                 return i;
