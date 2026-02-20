@@ -29,7 +29,7 @@ public class AnchorAssistScreen extends Screen {
         // =========================
 
         addToggle(centerX, y, buttonWidth, buttonHeight,
-                "Auto Hit", 
+                "Auto Hit",
                 () -> AnchorAssist.autoHitEnabled,
                 v -> AnchorAssist.autoHitEnabled = v);
         y += spacing;
@@ -66,18 +66,6 @@ public class AnchorAssistScreen extends Screen {
                 "Smart Crystal Break",
                 () -> AnchorAssist.smartCrystalBreakEnabled,
                 v -> AnchorAssist.smartCrystalBreakEnabled = v);
-        y += spacing;
-
-        addToggle(centerX, y, buttonWidth, buttonHeight,
-                "Smart Anchor Break",
-                () -> AnchorAssist.smartAnchorBreakEnabled,
-                v -> AnchorAssist.smartAnchorBreakEnabled = v);
-        y += spacing;
-
-        addToggle(centerX, y, buttonWidth, buttonHeight,
-                "W-Tap Assist",
-                () -> AnchorAssist.wTapEnabled,
-                v -> AnchorAssist.wTapEnabled = v);
     }
 
     // =========================
@@ -133,7 +121,7 @@ public class AnchorAssistScreen extends Screen {
 
         context.drawCenteredTextWithShadow(
                 this.textRenderer,
-                Text.literal("R=Hit | G=Anchor | Y=Safe | T=Totem | Z=Shield | X=Crystal | C=AnchorBreak | V=W-Tap | Shift=GUI")
+                Text.literal("R=Hit | G=Anchor | Y=Safe | T=Totem | Z=Shield | X=Crystal | Shift=GUI")
                         .formatted(Formatting.GRAY),
                 centerX,
                 50,
