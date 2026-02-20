@@ -69,9 +69,9 @@ public class AnchorAssistScreen extends Screen {
         y += spacing;
 
         addToggle(centerX, y, buttonWidth, buttonHeight,
-                "Crystal Optimizer",
-                () -> AnchorAssist.crystalOptimizerEnabled,
-                v -> AnchorAssist.crystalOptimizerEnabled = v);
+                "Crystal Optimizer v2",
+                () -> AnchorAssist.crystalOptimizerV2Enabled,
+                v -> AnchorAssist.crystalOptimizerV2Enabled = v);
         y += spacing + 10;
     }
 
