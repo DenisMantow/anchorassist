@@ -50,7 +50,6 @@ public class AnchorAssist implements ClientModInitializer {
     private static KeyBinding toggleTotemKey;
     private static KeyBinding toggleAnchorSafeKey;
     private static KeyBinding openGuiKey;
-
     private static KeyBinding smartCrystalKey;
     private static KeyBinding autoShieldKey;
 
@@ -76,12 +75,14 @@ public class AnchorAssist implements ClientModInitializer {
             if (autoAnchorEnabled) handleAutoAnchor(client);
             if (anchorSafeEnabled) handleAnchorSafe(client);
             if (fastTotemEnabled) handleFastTotem(client);
-
             if (smartCrystalBreakEnabled) handleSmartCrystalBreak(client);
             if (autoShieldBreakEnabled) handleAutoShieldBreak(client);
         });
     }
 
+    // =========================
+    // KEY REGISTER
+    // =========================
     private KeyBinding register(String name, int key) {
         return KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.anchorassist." + name,
@@ -149,8 +150,8 @@ public class AnchorAssist implements ClientModInitializer {
         if (client.player.distanceTo(crystal) <= 4.5D &&
                 client.player.getAttackCooldownProgress(0.5f) >= 1.0f) {
 
-            client.interactionManager.attackEntity(client.player, crystal);
-            client.player.swingHand(Hand.MAIN_HAND);
+                client.interactionManager.attackEntity(client.player, crystal);
+                client.player.swingHand(Hand.MAIN_HAND);
         }
     }
 
@@ -206,7 +207,6 @@ public class AnchorAssist implements ClientModInitializer {
 
         BlockPos anchorPos = hit.getBlockPos();
         if (!(mc.world.getBlockState(anchorPos).getBlock() instanceof RespawnAnchorBlock)) return;
-
         if (mc.world.getBlockState(anchorPos).get(RespawnAnchorBlock.CHARGES) < 1) return;
 
         Direction dir = mc.player.getHorizontalFacing();
@@ -230,7 +230,7 @@ public class AnchorAssist implements ClientModInitializer {
     }
 
     // =========================
-    // FAST TOTEM FIXED (1.20.1)
+    // FAST TOTEM (NO AUTO CLOSE + SLOT 7 FIX)
     // =========================
     private void handleFastTotem(MinecraftClient client) {
 
@@ -241,7 +241,6 @@ public class AnchorAssist implements ClientModInitializer {
 
         int totemSlot = -1;
 
-        // container index 9-35 = main inventory
         for (int i = 9; i <= 35; i++) {
             if (client.player.currentScreenHandler.getSlot(i).getStack().getItem()
                     == Items.TOTEM_OF_UNDYING) {
@@ -252,8 +251,8 @@ public class AnchorAssist implements ClientModInitializer {
 
         if (totemSlot == -1) return;
 
-        // HOTBAR 7 container index = 36 + 7 = 43
-        int slot7Container = 43;
+        int slot7Container = 36 + 7; // 43
+        int offhandContainer = 45;
 
         if (client.player.currentScreenHandler.getSlot(slot7Container).getStack().isEmpty()) {
 
@@ -264,13 +263,8 @@ public class AnchorAssist implements ClientModInitializer {
                     SlotActionType.SWAP,
                     client.player
             );
-
-            client.setScreen(null); // auto close inventory
             return;
         }
-
-        // OFFHAND container index 45
-        int offhandContainer = 45;
 
         if (client.player.currentScreenHandler.getSlot(offhandContainer).getStack().isEmpty()) {
 
@@ -281,8 +275,6 @@ public class AnchorAssist implements ClientModInitializer {
                     SlotActionType.SWAP,
                     client.player
             );
-
-            client.setScreen(null); // auto close inventory
         }
     }
 
