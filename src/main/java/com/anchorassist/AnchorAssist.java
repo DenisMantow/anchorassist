@@ -150,8 +150,8 @@ public class AnchorAssist implements ClientModInitializer {
         if (client.player.distanceTo(crystal) <= 4.5D &&
                 client.player.getAttackCooldownProgress(0.5f) >= 1.0f) {
 
-                client.interactionManager.attackEntity(client.player, crystal);
-                client.player.swingHand(Hand.MAIN_HAND);
+            client.interactionManager.attackEntity(client.player, crystal);
+            client.player.swingHand(Hand.MAIN_HAND);
         }
     }
 
@@ -199,18 +199,32 @@ public class AnchorAssist implements ClientModInitializer {
     }
 
     // =========================
-    // ANCHOR SAFE
+    // ANCHOR SAFE (FIXED PERFECT SIDE)
     // =========================
     private void handleAnchorSafe(MinecraftClient mc) {
 
         if (!(mc.crosshairTarget instanceof BlockHitResult hit)) return;
 
         BlockPos anchorPos = hit.getBlockPos();
-        if (!(mc.world.getBlockState(anchorPos).getBlock() instanceof RespawnAnchorBlock)) return;
-        if (mc.world.getBlockState(anchorPos).get(RespawnAnchorBlock.CHARGES) < 1) return;
 
-        Direction dir = mc.player.getHorizontalFacing();
-        BlockPos safePos = anchorPos.offset(dir);
+        if (!(mc.world.getBlockState(anchorPos).getBlock() instanceof RespawnAnchorBlock))
+            return;
+
+        int charges = mc.world.getBlockState(anchorPos)
+                .get(RespawnAnchorBlock.CHARGES);
+
+        if (charges < 1) return;
+
+        Vec3d playerPos = mc.player.getPos();
+        Vec3d anchorCenter = Vec3d.ofCenter(anchorPos);
+
+        double dx = playerPos.x - anchorCenter.x;
+        double dz = playerPos.z - anchorCenter.z;
+
+        Direction placeDir = Direction.getFacing(dx, 0, dz);
+        if (placeDir.getAxis().isVertical()) return;
+
+        BlockPos safePos = anchorPos.offset(placeDir);
 
         if (!mc.world.getBlockState(safePos).isAir()) return;
         if (!mc.world.getBlockState(safePos.down()).isSolidBlock(mc.world, safePos.down())) return;
@@ -227,10 +241,23 @@ public class AnchorAssist implements ClientModInitializer {
         );
 
         mc.player.swingHand(Hand.MAIN_HAND);
+
+        // AUTO SWITCH TO TOTEM (PRIORITY SLOT 7)
+        if (mc.player.getInventory().getStack(7).getItem() == Items.TOTEM_OF_UNDYING) {
+            mc.player.getInventory().selectedSlot = 7;
+            return;
+        }
+
+        for (int i = 0; i < 9; i++) {
+            if (mc.player.getInventory().getStack(i).getItem() == Items.TOTEM_OF_UNDYING) {
+                mc.player.getInventory().selectedSlot = i;
+                break;
+            }
+        }
     }
 
     // =========================
-    // FAST TOTEM (NO AUTO CLOSE + SLOT 7 FIX)
+    // FAST TOTEM (NO AUTO CLOSE)
     // =========================
     private void handleFastTotem(MinecraftClient client) {
 
