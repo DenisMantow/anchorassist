@@ -61,7 +61,6 @@ public class AnchorAssist implements ClientModInitializer {
         toggleTotemKey = register("toggletotem", GLFW.GLFW_KEY_T);
         toggleAnchorSafeKey = register("anchorsafe", GLFW.GLFW_KEY_Y);
         openGuiKey = register("opengui", GLFW.GLFW_KEY_RIGHT_SHIFT);
-
         smartCrystalKey = register("smartcrystal", GLFW.GLFW_KEY_X);
         autoShieldKey = register("autoshield", GLFW.GLFW_KEY_Z);
 
@@ -164,8 +163,8 @@ public class AnchorAssist implements ClientModInitializer {
         if (!(hit.getEntity() instanceof PlayerEntity target)) return;
         if (!target.isBlocking()) return;
 
-        int axeSlot = findItem(Items.NETHERITE_AXE, client);
-        int swordSlot = findItem(Items.NETHERITE_SWORD, client);
+        int axeSlot = findHotbarItem(Items.NETHERITE_AXE, client);
+        int swordSlot = findHotbarItem(Items.NETHERITE_SWORD, client);
 
         if (axeSlot == -1 || swordSlot == -1) return;
 
@@ -177,7 +176,7 @@ public class AnchorAssist implements ClientModInitializer {
     }
 
     // =========================
-    // AUTO ANCHOR
+    // AUTO ANCHOR (SWAP TO GLOWSTONE)
     // =========================
     private void handleAutoAnchor(MinecraftClient client) {
 
@@ -187,19 +186,22 @@ public class AnchorAssist implements ClientModInitializer {
         if (!(state.getBlock() instanceof RespawnAnchorBlock)) return;
         if (state.get(RespawnAnchorBlock.CHARGES) != 0) return;
 
-        for (int i = 0; i < 9; i++) {
-            if (client.player.getInventory().getStack(i).getItem() == Items.GLOWSTONE) {
+        int glowSlot = findHotbarItem(Items.GLOWSTONE, client);
+        if (glowSlot == -1) return;
 
-                client.player.getInventory().selectedSlot = i;
-                client.interactionManager.interactBlock(client.player, Hand.MAIN_HAND, hit);
-                client.player.swingHand(Hand.MAIN_HAND);
-                break;
-            }
-        }
+        client.player.getInventory().selectedSlot = glowSlot;
+
+        client.interactionManager.interactBlock(
+                client.player,
+                Hand.MAIN_HAND,
+                hit
+        );
+
+        client.player.swingHand(Hand.MAIN_HAND);
     }
 
     // =========================
-    // ANCHOR SAFE (FIXED PERFECT SIDE)
+    // ANCHOR SAFE (PERFECT SIDE + AUTO TOTEM)
     // =========================
     private void handleAnchorSafe(MinecraftClient mc) {
 
@@ -242,17 +244,9 @@ public class AnchorAssist implements ClientModInitializer {
 
         mc.player.swingHand(Hand.MAIN_HAND);
 
-        // AUTO SWITCH TO TOTEM (PRIORITY SLOT 7)
-        if (mc.player.getInventory().getStack(7).getItem() == Items.TOTEM_OF_UNDYING) {
-            mc.player.getInventory().selectedSlot = 7;
-            return;
-        }
-
-        for (int i = 0; i < 9; i++) {
-            if (mc.player.getInventory().getStack(i).getItem() == Items.TOTEM_OF_UNDYING) {
-                mc.player.getInventory().selectedSlot = i;
-                break;
-            }
+        int totemSlot = findHotbarItem(Items.TOTEM_OF_UNDYING, mc);
+        if (totemSlot != -1) {
+            mc.player.getInventory().selectedSlot = totemSlot;
         }
     }
 
@@ -265,7 +259,6 @@ public class AnchorAssist implements ClientModInitializer {
         if (client.player.currentScreenHandler == null) return;
 
         int syncId = client.player.currentScreenHandler.syncId;
-
         int totemSlot = -1;
 
         for (int i = 9; i <= 35; i++) {
@@ -278,7 +271,7 @@ public class AnchorAssist implements ClientModInitializer {
 
         if (totemSlot == -1) return;
 
-        int slot7Container = 36 + 7; // 43
+        int slot7Container = 36 + 7;
         int offhandContainer = 45;
 
         if (client.player.currentScreenHandler.getSlot(slot7Container).getStack().isEmpty()) {
@@ -305,7 +298,7 @@ public class AnchorAssist implements ClientModInitializer {
         }
     }
 
-    private int findItem(net.minecraft.item.Item item, MinecraftClient client) {
+    private int findHotbarItem(net.minecraft.item.Item item, MinecraftClient client) {
         for (int i = 0; i < 9; i++) {
             if (client.player.getInventory().getStack(i).getItem() == item)
                 return i;
