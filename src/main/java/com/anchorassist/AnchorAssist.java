@@ -77,8 +77,8 @@ public class AnchorAssist implements ClientModInitializer {
 
             handleToggles(client);
             handleTotemPopAutoOpen(client);
+            handleInventoryTotemHold(client);
 
-            // ===== FEATURES =====
             if (autoHitEnabled) handleAutoHit(client);
             if (autoAnchorEnabled) handleAutoAnchor(client);
             if (anchorSafeEnabled) handleAnchorSafe(client);
@@ -133,15 +133,14 @@ public class AnchorAssist implements ClientModInitializer {
     // =========================
     private void handleAutoHit(MinecraftClient client) {
 
-        if (client.crosshairTarget instanceof EntityHitResult hit) {
-            if (hit.getEntity() instanceof PlayerEntity target) {
+        if (client.crosshairTarget instanceof EntityHitResult hit &&
+            hit.getEntity() instanceof PlayerEntity target) {
 
-                if (client.player.distanceTo(target) <= 3.1D &&
-                        client.player.getAttackCooldownProgress(0.5f) >= 1.0f) {
+            if (client.player.distanceTo(target) <= 3.1D &&
+                client.player.getAttackCooldownProgress(0.5f) >= 1.0f) {
 
-                    client.interactionManager.attackEntity(client.player, target);
-                    client.player.swingHand(Hand.MAIN_HAND);
-                }
+                client.interactionManager.attackEntity(client.player, target);
+                client.player.swingHand(Hand.MAIN_HAND);
             }
         }
     }
@@ -155,7 +154,7 @@ public class AnchorAssist implements ClientModInitializer {
         if (!(hit.getEntity() instanceof EndCrystalEntity crystal)) return;
 
         if (client.player.distanceTo(crystal) <= 4.5D &&
-                client.player.getAttackCooldownProgress(0.5f) >= 1.0f) {
+            client.player.getAttackCooldownProgress(0.5f) >= 1.0f) {
 
             client.interactionManager.attackEntity(client.player, crystal);
             client.player.swingHand(Hand.MAIN_HAND);
@@ -198,13 +197,7 @@ public class AnchorAssist implements ClientModInitializer {
             if (client.player.getInventory().getStack(i).getItem() == Items.GLOWSTONE) {
 
                 client.player.getInventory().selectedSlot = i;
-
-                client.interactionManager.interactBlock(
-                        client.player,
-                        Hand.MAIN_HAND,
-                        blockHit
-                );
-
+                client.interactionManager.interactBlock(client.player, Hand.MAIN_HAND, blockHit);
                 client.player.swingHand(Hand.MAIN_HAND);
                 break;
             }
@@ -212,7 +205,7 @@ public class AnchorAssist implements ClientModInitializer {
     }
 
     // =========================
-    // ANCHOR SAFE
+    // ANCHOR SAFE (FIXED)
     // =========================
     private void handleAnchorSafe(MinecraftClient mc) {
 
@@ -226,7 +219,12 @@ public class AnchorAssist implements ClientModInitializer {
         if (mc.world.getBlockState(anchorPos).get(RespawnAnchorBlock.CHARGES) < 1)
             return;
 
-        Direction dir = mc.player.getHorizontalFacing();
+        Direction dir = Direction.getFacing(
+                anchorPos.getX() - mc.player.getBlockPos().getX(),
+                0,
+                anchorPos.getZ() - mc.player.getBlockPos().getZ()
+        );
+
         BlockPos safePos = anchorPos.offset(dir);
 
         if (!mc.world.getBlockState(safePos).isAir()) return;
@@ -245,10 +243,12 @@ public class AnchorAssist implements ClientModInitializer {
         );
 
         mc.player.swingHand(Hand.MAIN_HAND);
+
+        switchToTotem(mc);
     }
 
     // =========================
-    // FAST TOTEM + SLOT 7 FIX
+    // FAST TOTEM
     // =========================
     private void handleFastTotem(MinecraftClient client) {
 
@@ -268,30 +268,26 @@ public class AnchorAssist implements ClientModInitializer {
 
         if (totemSlot == -1) return;
 
-        int slot7Container = 36 + 7; // 43
+        int slot7Container = 36 + 7;
+        int offhandSlot = 45;
 
         if (client.player.currentScreenHandler.getSlot(slot7Container).getStack().isEmpty()) {
-            client.interactionManager.clickSlot(
-                    syncId,
-                    totemSlot,
-                    7,
-                    SlotActionType.SWAP,
-                    client.player
-            );
+            client.interactionManager.clickSlot(syncId, totemSlot, 7, SlotActionType.SWAP, client.player);
             return;
         }
 
-        int offhandSlot = 45;
-
         if (client.player.currentScreenHandler.getSlot(offhandSlot).getStack().isEmpty()) {
-            client.interactionManager.clickSlot(
-                    syncId,
-                    totemSlot,
-                    40,
-                    SlotActionType.SWAP,
-                    client.player
-            );
+            client.interactionManager.clickSlot(syncId, totemSlot, 40, SlotActionType.SWAP, client.player);
         }
+    }
+
+    // =========================
+    // AUTO HOLD TOTEM WHEN INVENTORY OPEN
+    // =========================
+    private void handleInventoryTotemHold(MinecraftClient client) {
+
+        if (!(client.currentScreen instanceof InventoryScreen)) return;
+        switchToTotem(client);
     }
 
     // =========================
@@ -307,6 +303,21 @@ public class AnchorAssist implements ClientModInitializer {
         }
 
         lastTickHadTotem = hasTotemNow;
+    }
+
+    // =========================
+    // SWITCH TO TOTEM
+    // =========================
+    private void switchToTotem(MinecraftClient client) {
+
+        for (int i = 0; i < 9; i++) {
+            if (client.player.getInventory().getStack(i).getItem()
+                    == Items.TOTEM_OF_UNDYING) {
+
+                client.player.getInventory().selectedSlot = i;
+                return;
+            }
+        }
     }
 
     private int findItem(net.minecraft.item.Item item, MinecraftClient client) {
