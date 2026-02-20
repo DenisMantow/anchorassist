@@ -12,6 +12,8 @@ import net.minecraft.client.gui.screen.ingame.InventoryScreen;
 import net.minecraft.text.Text;
 
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.decoration.EndCrystalEntity;
+
 import net.minecraft.item.Items;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
@@ -29,291 +31,283 @@ import org.lwjgl.glfw.GLFW;
 
 public class AnchorAssist implements ClientModInitializer {
 
-// =========================  
-// TOGGLES  
-// =========================  
-public static boolean autoHitEnabled = true;  
-public static boolean autoAnchorEnabled = true;  
-public static boolean fastTotemEnabled = true;  
-public static boolean anchorSafeEnabled = true;  
+    // =========================
+    // TOGGLES
+    // =========================
+    public static boolean autoHitEnabled = true;
+    public static boolean autoAnchorEnabled = true;
+    public static boolean fastTotemEnabled = true;
+    public static boolean anchorSafeEnabled = true;
 
-// =========================  
-// KEYBINDS  
-// =========================  
-private static KeyBinding toggleHitKey;  
-private static KeyBinding toggleAnchorKey;  
-private static KeyBinding toggleTotemKey;  
-private static KeyBinding toggleAnchorSafeKey;  
-private static KeyBinding openGuiKey;  
+    public static boolean autoShieldBreakEnabled = true;
+    public static boolean smartCrystalBreakEnabled = true;
+    public static boolean smartAnchorBreakEnabled = true;
+    public static boolean wTapEnabled = true;
 
-@Override  
-public void onInitializeClient() {  
+    // =========================
+    // KEYBINDS
+    // =========================
+    private static KeyBinding toggleHitKey;
+    private static KeyBinding toggleAnchorKey;
+    private static KeyBinding toggleTotemKey;
+    private static KeyBinding toggleAnchorSafeKey;
+    private static KeyBinding openGuiKey;
 
-    toggleHitKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(  
-            "key.anchorassist.togglehit",  
-            InputUtil.Type.KEYSYM,  
-            GLFW.GLFW_KEY_R,  
-            "category.anchorassist"  
-    ));  
+    private static KeyBinding autoShieldBreakKey;
+    private static KeyBinding smartCrystalBreakKey;
+    private static KeyBinding smartAnchorBreakKey;
+    private static KeyBinding wTapKey;
 
-    toggleAnchorKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(  
-            "key.anchorassist.toggleanchor",  
-            InputUtil.Type.KEYSYM,  
-            GLFW.GLFW_KEY_G,  
-            "category.anchorassist"  
-    ));  
+    @Override
+    public void onInitializeClient() {
 
-    toggleTotemKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(  
-            "key.anchorassist.toggletotem",  
-            InputUtil.Type.KEYSYM,  
-            GLFW.GLFW_KEY_T,  
-            "category.anchorassist"  
-    ));  
+        toggleHitKey = registerKey("togglehit", GLFW.GLFW_KEY_R);
+        toggleAnchorKey = registerKey("toggleanchor", GLFW.GLFW_KEY_G);
+        toggleTotemKey = registerKey("toggletotem", GLFW.GLFW_KEY_T);
+        toggleAnchorSafeKey = registerKey("anchorsafe", GLFW.GLFW_KEY_Y);
+        openGuiKey = registerKey("opengui", GLFW.GLFW_KEY_RIGHT_SHIFT);
 
-    toggleAnchorSafeKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(  
-            "key.anchorassist.anchorsafe",  
-            InputUtil.Type.KEYSYM,  
-            GLFW.GLFW_KEY_Y,  
-            "category.anchorassist"  
-    ));  
+        autoShieldBreakKey = registerKey("autoshieldbreak", GLFW.GLFW_KEY_Z);
+        smartCrystalBreakKey = registerKey("smartcrystalbreak", GLFW.GLFW_KEY_X);
+        smartAnchorBreakKey = registerKey("smartanchorbreak", GLFW.GLFW_KEY_C);
+        wTapKey = registerKey("wtap", GLFW.GLFW_KEY_V);
 
-    openGuiKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(  
-            "key.anchorassist.opengui",  
-            InputUtil.Type.KEYSYM,  
-            GLFW.GLFW_KEY_RIGHT_SHIFT,  
-            "category.anchorassist"  
-    ));  
+        ClientTickEvents.END_CLIENT_TICK.register(client -> {
 
-    ClientTickEvents.END_CLIENT_TICK.register(client -> {  
+            if (client.player == null || client.world == null) return;
 
-        if (client.player == null || client.world == null) return;  
+            handleToggles(client);
 
-        // =========================  
-        // TOGGLE KEYS  
-        // =========================  
-        while (toggleHitKey.wasPressed()) {  
-            autoHitEnabled = !autoHitEnabled;  
-            client.player.sendMessage(Text.literal("Auto Hit: " + (autoHitEnabled ? "ON" : "OFF")), true);  
-        }  
+            // Feature Calls
+            if (autoHitEnabled) handleAutoHit(client);
+            if (autoAnchorEnabled) handleAutoAnchor(client);
+            if (anchorSafeEnabled) handleAnchorSafe(client);
+            if (fastTotemEnabled) handleFastTotem(client);
 
-        while (toggleAnchorKey.wasPressed()) {  
-            autoAnchorEnabled = !autoAnchorEnabled;  
-            client.player.sendMessage(Text.literal("Auto Anchor: " + (autoAnchorEnabled ? "ON" : "OFF")), true);  
-        }  
+            if (autoShieldBreakEnabled) handleAutoShieldBreak(client);
+            if (smartCrystalBreakEnabled) handleSmartCrystalBreak(client);
+            if (smartAnchorBreakEnabled) handleSmartAnchorBreak(client);
 
-        while (toggleTotemKey.wasPressed()) {  
-            fastTotemEnabled = !fastTotemEnabled;  
-            client.player.sendMessage(Text.literal("Fast Totem: " + (fastTotemEnabled ? "ON" : "OFF")), true);  
-        }  
+            if (wTapEnabled && client.player.handSwinging) {
+                client.player.setSprinting(false);
+                client.player.setSprinting(true);
+            }
+        });
+    }
 
-        while (toggleAnchorSafeKey.wasPressed()) {  
-            anchorSafeEnabled = !anchorSafeEnabled;  
-            client.player.sendMessage(Text.literal("Anchor Safe: " + (anchorSafeEnabled ? "ON" : "OFF")), true);  
-        }  
+    private KeyBinding registerKey(String name, int key) {
+        return KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.anchorassist." + name,
+                InputUtil.Type.KEYSYM,
+                key,
+                "category.anchorassist"
+        ));
+    }
 
-        while (openGuiKey.wasPressed()) {  
-            client.setScreen(new AnchorAssistScreen());  
-        }  
+    private void handleToggles(MinecraftClient client) {
 
-        // =========================  
-        // FEATURE CALLS  
-        // =========================  
-        if (autoHitEnabled) handleAutoHit(client);  
-        if (autoAnchorEnabled) handleAutoAnchor(client);  
-        if (anchorSafeEnabled) handleAnchorSafe(client);  
-        if (fastTotemEnabled) handleFastTotem(client);  
-    });  
-}  
+        while (toggleHitKey.wasPressed())
+            autoHitEnabled = toggle(client, autoHitEnabled, "Auto Hit");
 
-// =========================  
-// AUTO HIT  
-// =========================  
-private void handleAutoHit(MinecraftClient client) {  
+        while (toggleAnchorKey.wasPressed())
+            autoAnchorEnabled = toggle(client, autoAnchorEnabled, "Auto Anchor");
 
-    if (client.crosshairTarget instanceof EntityHitResult entityHit) {  
-        if (entityHit.getEntity() instanceof PlayerEntity target) {  
+        while (toggleTotemKey.wasPressed())
+            fastTotemEnabled = toggle(client, fastTotemEnabled, "Fast Totem");
 
-            if (client.player.distanceTo(target) <= 3.1D) {  
-                if (client.player.getAttackCooldownProgress(0.5f) >= 1.0f) {  
-                    client.interactionManager.attackEntity(client.player, target);  
-                    client.player.swingHand(Hand.MAIN_HAND);  
-                }  
-            }  
-        }  
-    }  
-}  
+        while (toggleAnchorSafeKey.wasPressed())
+            anchorSafeEnabled = toggle(client, anchorSafeEnabled, "Anchor Safe");
 
-// =========================  
-// AUTO ANCHOR (1 CHARGE)  
-// =========================  
-private void handleAutoAnchor(MinecraftClient client) {  
+        while (autoShieldBreakKey.wasPressed())
+            autoShieldBreakEnabled = toggle(client, autoShieldBreakEnabled, "Auto Shield Break");
 
-    if (!(client.crosshairTarget instanceof BlockHitResult blockHit)) return;  
+        while (smartCrystalBreakKey.wasPressed())
+            smartCrystalBreakEnabled = toggle(client, smartCrystalBreakEnabled, "Smart Crystal Break");
 
-    BlockState state = client.world.getBlockState(blockHit.getBlockPos());  
+        while (smartAnchorBreakKey.wasPressed())
+            smartAnchorBreakEnabled = toggle(client, smartAnchorBreakEnabled, "Smart Anchor Break");
 
-    if (!(state.getBlock() instanceof RespawnAnchorBlock)) return;  
+        while (wTapKey.wasPressed())
+            wTapEnabled = toggle(client, wTapEnabled, "W-Tap Assist");
 
-    int charges = state.get(RespawnAnchorBlock.CHARGES);  
+        while (openGuiKey.wasPressed())
+            client.setScreen(new AnchorAssistScreen());
+    }
 
-    if (charges != 0) return;  
+    private boolean toggle(MinecraftClient client, boolean value, String name) {
+        boolean newValue = !value;
+        client.player.sendMessage(Text.literal(name + ": " + (newValue ? "ON" : "OFF")), true);
+        return newValue;
+    }
 
-    for (int i = 0; i < 9; i++) {  
-        if (client.player.getInventory().getStack(i).getItem() == Items.GLOWSTONE) {  
+    // =========================
+    // AUTO HIT
+    // =========================
+    private void handleAutoHit(MinecraftClient client) {
+        if (client.crosshairTarget instanceof EntityHitResult hit) {
+            if (hit.getEntity() instanceof PlayerEntity target) {
+                if (client.player.distanceTo(target) <= 3.1D &&
+                        client.player.getAttackCooldownProgress(0.5f) >= 1f) {
 
-            client.player.getInventory().selectedSlot = i;  
+                    client.interactionManager.attackEntity(client.player, target);
+                    client.player.swingHand(Hand.MAIN_HAND);
+                }
+            }
+        }
+    }
 
-            client.interactionManager.interactBlock(  
-                    client.player,  
-                    Hand.MAIN_HAND,  
-                    blockHit  
-            );  
+    // =========================
+    // AUTO SHIELD BREAK
+    // =========================
+    private void handleAutoShieldBreak(MinecraftClient client) {
+        if (!(client.crosshairTarget instanceof EntityHitResult hit)) return;
+        if (!(hit.getEntity() instanceof PlayerEntity target)) return;
+        if (!target.isBlocking()) return;
 
-            client.player.swingHand(Hand.MAIN_HAND);  
-            break;  
-        }  
-    }  
-}  
+        int axeSlot = findItem(Items.NETHERITE_AXE, client);
+        int swordSlot = findItem(Items.NETHERITE_SWORD, client);
 
-// =========================  
-// ANCHOR SAFE + AUTO TOTEM  
-// =========================  
-private void handleAnchorSafe(MinecraftClient mc) {  
+        if (axeSlot == -1 || swordSlot == -1) return;
 
-    if (!(mc.crosshairTarget instanceof BlockHitResult blockHit)) return;  
+        client.player.getInventory().selectedSlot = axeSlot;
+        client.interactionManager.attackEntity(client.player, target);
+        client.player.swingHand(Hand.MAIN_HAND);
 
-    BlockPos anchorPos = blockHit.getBlockPos();  
+        client.player.getInventory().selectedSlot = swordSlot;
+    }
 
-    if (!(mc.world.getBlockState(anchorPos).getBlock() instanceof RespawnAnchorBlock))  
-        return;  
+    // =========================
+    // SMART CRYSTAL BREAK
+    // =========================
+    private void handleSmartCrystalBreak(MinecraftClient client) {
+        if (!(client.crosshairTarget instanceof EntityHitResult hit)) return;
+        if (!(hit.getEntity() instanceof EndCrystalEntity crystal)) return;
 
-    int charges = mc.world.getBlockState(anchorPos)  
-            .get(RespawnAnchorBlock.CHARGES);  
+        if (client.player.distanceTo(crystal) <= 4.5f &&
+                client.player.getAttackCooldownProgress(0.5f) >= 1f) {
 
-    if (charges < 1)  
-        return;  
+            client.interactionManager.attackEntity(client.player, crystal);
+            client.player.swingHand(Hand.MAIN_HAND);
+        }
+    }
 
-    Vec3d playerPos = mc.player.getPos();  
-    Vec3d anchorCenter = Vec3d.ofCenter(anchorPos);  
+    // =========================
+    // SMART ANCHOR BREAK
+    // =========================
+    private void handleSmartAnchorBreak(MinecraftClient client) {
+        if (!(client.crosshairTarget instanceof BlockHitResult hit)) return;
 
-    double dx = playerPos.x - anchorCenter.x;  
-    double dz = playerPos.z - anchorCenter.z;  
+        BlockState state = client.world.getBlockState(hit.getBlockPos());
 
-    double distance = Math.sqrt(dx * dx + dz * dz);  
+        if (state.getBlock() instanceof RespawnAnchorBlock &&
+                state.get(RespawnAnchorBlock.CHARGES) > 0) {
 
-    if (distance < 1.2 || distance > 3.0)  
-        return;  
+            client.interactionManager.interactBlock(
+                    client.player,
+                    Hand.MAIN_HAND,
+                    hit
+            );
+        }
+    }
 
-    Direction dir = Direction.getFacing(dx, 0, dz);  
-    if (dir.getAxis().isVertical()) return;  
+    // =========================
+    // AUTO ANCHOR (1 CHARGE)
+    // =========================
+    private void handleAutoAnchor(MinecraftClient client) {
 
-    BlockPos safePos = anchorPos.offset(dir);  
+        if (!(client.crosshairTarget instanceof BlockHitResult blockHit)) return;
 
-    if (!mc.world.getBlockState(safePos).isAir())  
-        return;  
+        BlockState state = client.world.getBlockState(blockHit.getBlockPos());
+        if (!(state.getBlock() instanceof RespawnAnchorBlock)) return;
 
-    BlockPos floor = safePos.down();  
+        if (state.get(RespawnAnchorBlock.CHARGES) != 0) return;
 
-    if (!mc.world.getBlockState(floor).isSolidBlock(mc.world, floor))  
-        return;  
+        int glowSlot = findItem(Items.GLOWSTONE, client);
+        if (glowSlot == -1) return;
 
-    // SWITCH KE GLOWSTONE  
-    int glowSlot = -1;  
-    for (int i = 0; i < 9; i++) {  
-        if (mc.player.getInventory().getStack(i).getItem() == Items.GLOWSTONE) {  
-            glowSlot = i;  
-            break;  
-        }  
-    }  
+        client.player.getInventory().selectedSlot = glowSlot;
 
-    if (glowSlot == -1) return;  
+        client.interactionManager.interactBlock(
+                client.player,
+                Hand.MAIN_HAND,
+                blockHit
+        );
 
-    mc.player.getInventory().selectedSlot = glowSlot;  
+        client.player.swingHand(Hand.MAIN_HAND);
+    }
 
-    // PLACE SAFE BLOCK  
-    mc.interactionManager.interactBlock(  
-            mc.player,  
-            Hand.MAIN_HAND,  
-            new BlockHitResult(  
-                    Vec3d.ofCenter(floor),  
-                    Direction.UP,  
-                    floor,  
-                    false  
-            )  
-    );  
+    // =========================
+    // ANCHOR SAFE
+    // =========================
+    private void handleAnchorSafe(MinecraftClient mc) {
 
-    mc.player.swingHand(Hand.MAIN_HAND);  
+        if (!(mc.crosshairTarget instanceof BlockHitResult blockHit)) return;
 
-    // SWITCH KE TOTEM  
-    if (mc.player.getInventory().getStack(7).getItem() == Items.TOTEM_OF_UNDYING) {  
-        mc.player.getInventory().selectedSlot = 7;  
-        return;  
-    }  
+        BlockPos anchorPos = blockHit.getBlockPos();
 
-    for (int i = 0; i < 9; i++) {  
-        if (mc.player.getInventory().getStack(i).getItem() == Items.TOTEM_OF_UNDYING) {  
-            mc.player.getInventory().selectedSlot = i;  
-            break;  
-        }  
-    }  
-}  
+        if (!(mc.world.getBlockState(anchorPos).getBlock() instanceof RespawnAnchorBlock))
+            return;
 
-// =========================  
-// FAST TOTEM (1.20.1)  
-// =========================  
-private void handleFastTotem(MinecraftClient client) {  
+        if (mc.world.getBlockState(anchorPos).get(RespawnAnchorBlock.CHARGES) < 1)
+            return;
 
-    if (!(client.currentScreen instanceof InventoryScreen)) return;  
-    if (client.player.currentScreenHandler == null) return;  
+        Direction dir = mc.player.getHorizontalFacing();
+        BlockPos safePos = anchorPos.offset(dir);
 
-    int syncId = client.player.currentScreenHandler.syncId;  
-    int containerTotemSlot = -1;  
+        if (!mc.world.getBlockState(safePos).isAir()) return;
+        if (!mc.world.getBlockState(safePos.down()).isSolidBlock(mc.world, safePos.down()))
+            return;
 
-    for (int i = 9; i <= 44; i++) {  
-        if (client.player.currentScreenHandler  
-                .getSlot(i)  
-                .getStack()  
-                .getItem() == Items.TOTEM_OF_UNDYING) {  
+        int glowSlot = findItem(Items.GLOWSTONE, mc);
+        if (glowSlot == -1) return;
 
-            containerTotemSlot = i;  
-            break;  
-        }  
-    }  
+        mc.player.getInventory().selectedSlot = glowSlot;
 
-    if (containerTotemSlot == -1) return;  
+        mc.interactionManager.interactBlock(
+                mc.player,
+                Hand.MAIN_HAND,
+                new BlockHitResult(
+                        Vec3d.ofCenter(safePos.down()),
+                        Direction.UP,
+                        safePos.down(),
+                        false
+                )
+        );
 
-    int slot7Container = 43;  
+        mc.player.swingHand(Hand.MAIN_HAND);
+    }
 
-    if (client.player.currentScreenHandler  
-            .getSlot(slot7Container)  
-            .getStack()  
-            .isEmpty()) {  
+    // =========================
+    // FAST TOTEM
+    // =========================
+    private void handleFastTotem(MinecraftClient client) {
 
-        client.interactionManager.clickSlot(  
-                syncId,  
-                containerTotemSlot,  
-                7,  
-                SlotActionType.SWAP,  
-                client.player  
-        );  
-        return;  
-    }  
+        if (!(client.currentScreen instanceof InventoryScreen)) return;
+        if (client.player.currentScreenHandler == null) return;
 
-    int offhandContainer = 45;  
+        int syncId = client.player.currentScreenHandler.syncId;
 
-    if (client.player.currentScreenHandler  
-            .getSlot(offhandContainer)  
-            .getStack()  
-            .isEmpty()) {  
+        for (int i = 9; i <= 44; i++) {
+            if (client.player.currentScreenHandler.getSlot(i).getStack().getItem() ==
+                    Items.TOTEM_OF_UNDYING) {
 
-        client.interactionManager.clickSlot(  
-                syncId,  
-                containerTotemSlot,  
-                40,  
-                SlotActionType.SWAP,  
-                client.player  
-        );  
-    }  
-}
+                client.interactionManager.clickSlot(
+                        syncId,
+                        i,
+                        40,
+                        SlotActionType.SWAP,
+                        client.player
+                );
+                break;
+            }
+        }
+    }
 
+    private int findItem(net.minecraft.item.Item item, MinecraftClient client) {
+        for (int i = 0; i < 9; i++) {
+            if (client.player.getInventory().getStack(i).getItem() == item)
+                return i;
+        }
+        return -1;
+    }
 }
