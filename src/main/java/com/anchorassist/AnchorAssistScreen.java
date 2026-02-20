@@ -18,9 +18,11 @@ public class AnchorAssistScreen extends Screen {
         int centerX = this.width / 2;
         int centerY = this.height / 2;
 
-        int buttonWidth = 180;
+        int buttonWidth = 200;
         int buttonHeight = 20;
-        int spacing = 28;
+        int spacing = 26;
+
+        int startY = centerY - spacing * 3;
 
         // =========================
         // AUTO HIT
@@ -31,7 +33,7 @@ public class AnchorAssistScreen extends Screen {
                     AnchorAssist.autoHitEnabled = !AnchorAssist.autoHitEnabled;
                     button.setMessage(getToggleText("Auto Hit", AnchorAssist.autoHitEnabled));
                 })
-                .dimensions(centerX - buttonWidth / 2, centerY - spacing * 2, buttonWidth, buttonHeight)
+                .dimensions(centerX - buttonWidth / 2, startY, buttonWidth, buttonHeight)
                 .build()
         );
 
@@ -44,7 +46,7 @@ public class AnchorAssistScreen extends Screen {
                     AnchorAssist.autoAnchorEnabled = !AnchorAssist.autoAnchorEnabled;
                     button.setMessage(getToggleText("Auto Anchor", AnchorAssist.autoAnchorEnabled));
                 })
-                .dimensions(centerX - buttonWidth / 2, centerY - spacing, buttonWidth, buttonHeight)
+                .dimensions(centerX - buttonWidth / 2, startY + spacing, buttonWidth, buttonHeight)
                 .build()
         );
 
@@ -57,7 +59,7 @@ public class AnchorAssistScreen extends Screen {
                     AnchorAssist.anchorSafeEnabled = !AnchorAssist.anchorSafeEnabled;
                     button.setMessage(getToggleText("Anchor Safe", AnchorAssist.anchorSafeEnabled));
                 })
-                .dimensions(centerX - buttonWidth / 2, centerY, buttonWidth, buttonHeight)
+                .dimensions(centerX - buttonWidth / 2, startY + spacing * 2, buttonWidth, buttonHeight)
                 .build()
         );
 
@@ -70,13 +72,36 @@ public class AnchorAssistScreen extends Screen {
                     AnchorAssist.fastTotemEnabled = !AnchorAssist.fastTotemEnabled;
                     button.setMessage(getToggleText("Fast Totem", AnchorAssist.fastTotemEnabled));
                 })
-                .dimensions(centerX - buttonWidth / 2, centerY + spacing, buttonWidth, buttonHeight)
+                .dimensions(centerX - buttonWidth / 2, startY + spacing * 3, buttonWidth, buttonHeight)
+                .build()
+        );
+
+        // =========================
+        // D-TAP CRYSTAL
+        // =========================
+        this.addDrawableChild(ButtonWidget.builder(
+                getToggleText("D-Tap Crystal", AnchorAssist.dTapEnabled),
+                button -> {
+                    AnchorAssist.dTapEnabled = !AnchorAssist.dTapEnabled;
+                    button.setMessage(getToggleText("D-Tap Crystal", AnchorAssist.dTapEnabled));
+                })
+                .dimensions(centerX - buttonWidth / 2, startY + spacing * 4, buttonWidth, buttonHeight)
+                .build()
+        );
+
+        // =========================
+        // CLOSE BUTTON
+        // =========================
+        this.addDrawableChild(ButtonWidget.builder(
+                Text.literal("Close").formatted(Formatting.GRAY),
+                button -> this.close())
+                .dimensions(centerX - 50, startY + spacing * 5 + 5, 100, buttonHeight)
                 .build()
         );
     }
 
     // =========================
-    // TEXT STYLE (Modern ON/OFF)
+    // TEXT STYLE
     // =========================
     private Text getToggleText(String name, boolean enabled) {
         return Text.literal(name + ": ")
@@ -87,7 +112,7 @@ public class AnchorAssistScreen extends Screen {
     }
 
     // =========================
-    // TITLE + KEYBINDS INFO
+    // RENDER
     // =========================
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
@@ -101,16 +126,16 @@ public class AnchorAssistScreen extends Screen {
                 this.textRenderer,
                 Text.literal("Anchor Assist").formatted(Formatting.AQUA, Formatting.BOLD),
                 centerX,
-                30,
+                25,
                 0xFFFFFF
         );
 
         context.drawCenteredTextWithShadow(
                 this.textRenderer,
-                Text.literal("R = Hit | G = Anchor | Y = Safe | T = Totem | Shift = GUI")
+                Text.literal("R=Hit | G=Anchor | Y=Safe | T=Totem | U=D-Tap Toggle | V=D-Tap Trigger | Shift=GUI")
                         .formatted(Formatting.GRAY),
                 centerX,
-                45,
+                40,
                 0xFFFFFF
         );
     }
