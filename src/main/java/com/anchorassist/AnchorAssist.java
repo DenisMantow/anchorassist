@@ -39,10 +39,13 @@ public class AnchorAssist implements ClientModInitializer {
     public static boolean fastTotemEnabled = true;
     public static boolean anchorSafeEnabled = true;
 
-    public static boolean autoShieldBreakEnabled = true;
     public static boolean smartCrystalBreakEnabled = true;
-    public static boolean smartAnchorBreakEnabled = true;
-    public static boolean wTapEnabled = true;
+    public static boolean autoShieldBreakEnabled = true;
+
+    // =========================
+    // INTERNAL
+    // =========================
+    private boolean lastTickHadTotem = true;
 
     // =========================
     // KEYBINDS
@@ -53,10 +56,8 @@ public class AnchorAssist implements ClientModInitializer {
     private static KeyBinding toggleAnchorSafeKey;
     private static KeyBinding openGuiKey;
 
-    private static KeyBinding autoShieldBreakKey;
-    private static KeyBinding smartCrystalBreakKey;
-    private static KeyBinding smartAnchorBreakKey;
-    private static KeyBinding wTapKey;
+    private static KeyBinding smartCrystalKey;
+    private static KeyBinding autoShieldKey;
 
     @Override
     public void onInitializeClient() {
@@ -67,31 +68,24 @@ public class AnchorAssist implements ClientModInitializer {
         toggleAnchorSafeKey = registerKey("anchorsafe", GLFW.GLFW_KEY_Y);
         openGuiKey = registerKey("opengui", GLFW.GLFW_KEY_RIGHT_SHIFT);
 
-        autoShieldBreakKey = registerKey("autoshieldbreak", GLFW.GLFW_KEY_Z);
-        smartCrystalBreakKey = registerKey("smartcrystalbreak", GLFW.GLFW_KEY_X);
-        smartAnchorBreakKey = registerKey("smartanchorbreak", GLFW.GLFW_KEY_C);
-        wTapKey = registerKey("wtap", GLFW.GLFW_KEY_V);
+        smartCrystalKey = registerKey("smartcrystal", GLFW.GLFW_KEY_X);
+        autoShieldKey = registerKey("autoshield", GLFW.GLFW_KEY_Z);
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
 
             if (client.player == null || client.world == null) return;
 
             handleToggles(client);
+            handleTotemPopAutoOpen(client);
 
-            // Feature Calls
+            // ===== FEATURES =====
             if (autoHitEnabled) handleAutoHit(client);
             if (autoAnchorEnabled) handleAutoAnchor(client);
             if (anchorSafeEnabled) handleAnchorSafe(client);
             if (fastTotemEnabled) handleFastTotem(client);
 
-            if (autoShieldBreakEnabled) handleAutoShieldBreak(client);
             if (smartCrystalBreakEnabled) handleSmartCrystalBreak(client);
-            if (smartAnchorBreakEnabled) handleSmartAnchorBreak(client);
-
-            if (wTapEnabled && client.player.handSwinging) {
-                client.player.setSprinting(false);
-                client.player.setSprinting(true);
-            }
+            if (autoShieldBreakEnabled) handleAutoShieldBreak(client);
         });
     }
 
@@ -118,17 +112,11 @@ public class AnchorAssist implements ClientModInitializer {
         while (toggleAnchorSafeKey.wasPressed())
             anchorSafeEnabled = toggle(client, anchorSafeEnabled, "Anchor Safe");
 
-        while (autoShieldBreakKey.wasPressed())
-            autoShieldBreakEnabled = toggle(client, autoShieldBreakEnabled, "Auto Shield Break");
-
-        while (smartCrystalBreakKey.wasPressed())
+        while (smartCrystalKey.wasPressed())
             smartCrystalBreakEnabled = toggle(client, smartCrystalBreakEnabled, "Smart Crystal Break");
 
-        while (smartAnchorBreakKey.wasPressed())
-            smartAnchorBreakEnabled = toggle(client, smartAnchorBreakEnabled, "Smart Anchor Break");
-
-        while (wTapKey.wasPressed())
-            wTapEnabled = toggle(client, wTapEnabled, "W-Tap Assist");
+        while (autoShieldKey.wasPressed())
+            autoShieldBreakEnabled = toggle(client, autoShieldBreakEnabled, "Auto Shield Break");
 
         while (openGuiKey.wasPressed())
             client.setScreen(new AnchorAssistScreen());
@@ -144,10 +132,12 @@ public class AnchorAssist implements ClientModInitializer {
     // AUTO HIT
     // =========================
     private void handleAutoHit(MinecraftClient client) {
+
         if (client.crosshairTarget instanceof EntityHitResult hit) {
             if (hit.getEntity() instanceof PlayerEntity target) {
+
                 if (client.player.distanceTo(target) <= 3.1D &&
-                        client.player.getAttackCooldownProgress(0.5f) >= 1f) {
+                        client.player.getAttackCooldownProgress(0.5f) >= 1.0f) {
 
                     client.interactionManager.attackEntity(client.player, target);
                     client.player.swingHand(Hand.MAIN_HAND);
@@ -157,9 +147,26 @@ public class AnchorAssist implements ClientModInitializer {
     }
 
     // =========================
+    // SMART CRYSTAL BREAK
+    // =========================
+    private void handleSmartCrystalBreak(MinecraftClient client) {
+
+        if (!(client.crosshairTarget instanceof EntityHitResult hit)) return;
+        if (!(hit.getEntity() instanceof EndCrystalEntity crystal)) return;
+
+        if (client.player.distanceTo(crystal) <= 4.5D &&
+                client.player.getAttackCooldownProgress(0.5f) >= 1.0f) {
+
+            client.interactionManager.attackEntity(client.player, crystal);
+            client.player.swingHand(Hand.MAIN_HAND);
+        }
+    }
+
+    // =========================
     // AUTO SHIELD BREAK
     // =========================
     private void handleAutoShieldBreak(MinecraftClient client) {
+
         if (!(client.crosshairTarget instanceof EntityHitResult hit)) return;
         if (!(hit.getEntity() instanceof PlayerEntity target)) return;
         if (!target.isBlocking()) return;
@@ -177,41 +184,7 @@ public class AnchorAssist implements ClientModInitializer {
     }
 
     // =========================
-    // SMART CRYSTAL BREAK
-    // =========================
-    private void handleSmartCrystalBreak(MinecraftClient client) {
-        if (!(client.crosshairTarget instanceof EntityHitResult hit)) return;
-        if (!(hit.getEntity() instanceof EndCrystalEntity crystal)) return;
-
-        if (client.player.distanceTo(crystal) <= 4.5f &&
-                client.player.getAttackCooldownProgress(0.5f) >= 1f) {
-
-            client.interactionManager.attackEntity(client.player, crystal);
-            client.player.swingHand(Hand.MAIN_HAND);
-        }
-    }
-
-    // =========================
-    // SMART ANCHOR BREAK
-    // =========================
-    private void handleSmartAnchorBreak(MinecraftClient client) {
-        if (!(client.crosshairTarget instanceof BlockHitResult hit)) return;
-
-        BlockState state = client.world.getBlockState(hit.getBlockPos());
-
-        if (state.getBlock() instanceof RespawnAnchorBlock &&
-                state.get(RespawnAnchorBlock.CHARGES) > 0) {
-
-            client.interactionManager.interactBlock(
-                    client.player,
-                    Hand.MAIN_HAND,
-                    hit
-            );
-        }
-    }
-
-    // =========================
-    // AUTO ANCHOR (1 CHARGE)
+    // AUTO ANCHOR
     // =========================
     private void handleAutoAnchor(MinecraftClient client) {
 
@@ -219,21 +192,23 @@ public class AnchorAssist implements ClientModInitializer {
 
         BlockState state = client.world.getBlockState(blockHit.getBlockPos());
         if (!(state.getBlock() instanceof RespawnAnchorBlock)) return;
-
         if (state.get(RespawnAnchorBlock.CHARGES) != 0) return;
 
-        int glowSlot = findItem(Items.GLOWSTONE, client);
-        if (glowSlot == -1) return;
+        for (int i = 0; i < 9; i++) {
+            if (client.player.getInventory().getStack(i).getItem() == Items.GLOWSTONE) {
 
-        client.player.getInventory().selectedSlot = glowSlot;
+                client.player.getInventory().selectedSlot = i;
 
-        client.interactionManager.interactBlock(
-                client.player,
-                Hand.MAIN_HAND,
-                blockHit
-        );
+                client.interactionManager.interactBlock(
+                        client.player,
+                        Hand.MAIN_HAND,
+                        blockHit
+                );
 
-        client.player.swingHand(Hand.MAIN_HAND);
+                client.player.swingHand(Hand.MAIN_HAND);
+                break;
+            }
+        }
     }
 
     // =========================
@@ -258,11 +233,6 @@ public class AnchorAssist implements ClientModInitializer {
         if (!mc.world.getBlockState(safePos.down()).isSolidBlock(mc.world, safePos.down()))
             return;
 
-        int glowSlot = findItem(Items.GLOWSTONE, mc);
-        if (glowSlot == -1) return;
-
-        mc.player.getInventory().selectedSlot = glowSlot;
-
         mc.interactionManager.interactBlock(
                 mc.player,
                 Hand.MAIN_HAND,
@@ -278,7 +248,7 @@ public class AnchorAssist implements ClientModInitializer {
     }
 
     // =========================
-    // FAST TOTEM
+    // FAST TOTEM + SLOT 7 FIX
     // =========================
     private void handleFastTotem(MinecraftClient client) {
 
@@ -286,21 +256,57 @@ public class AnchorAssist implements ClientModInitializer {
         if (client.player.currentScreenHandler == null) return;
 
         int syncId = client.player.currentScreenHandler.syncId;
+        int totemSlot = -1;
 
-        for (int i = 9; i <= 44; i++) {
-            if (client.player.currentScreenHandler.getSlot(i).getStack().getItem() ==
-                    Items.TOTEM_OF_UNDYING) {
-
-                client.interactionManager.clickSlot(
-                        syncId,
-                        i,
-                        40,
-                        SlotActionType.SWAP,
-                        client.player
-                );
+        for (int i = 9; i <= 35; i++) {
+            if (client.player.currentScreenHandler.getSlot(i).getStack().getItem()
+                    == Items.TOTEM_OF_UNDYING) {
+                totemSlot = i;
                 break;
             }
         }
+
+        if (totemSlot == -1) return;
+
+        int slot7Container = 36 + 7; // 43
+
+        if (client.player.currentScreenHandler.getSlot(slot7Container).getStack().isEmpty()) {
+            client.interactionManager.clickSlot(
+                    syncId,
+                    totemSlot,
+                    7,
+                    SlotActionType.SWAP,
+                    client.player
+            );
+            return;
+        }
+
+        int offhandSlot = 45;
+
+        if (client.player.currentScreenHandler.getSlot(offhandSlot).getStack().isEmpty()) {
+            client.interactionManager.clickSlot(
+                    syncId,
+                    totemSlot,
+                    40,
+                    SlotActionType.SWAP,
+                    client.player
+            );
+        }
+    }
+
+    // =========================
+    // AUTO OPEN INVENTORY ON TOTEM POP
+    // =========================
+    private void handleTotemPopAutoOpen(MinecraftClient client) {
+
+        boolean hasTotemNow =
+                client.player.getOffHandStack().getItem() == Items.TOTEM_OF_UNDYING;
+
+        if (lastTickHadTotem && !hasTotemNow) {
+            client.setScreen(new InventoryScreen(client.player));
+        }
+
+        lastTickHadTotem = hasTotemNow;
     }
 
     private int findItem(net.minecraft.item.Item item, MinecraftClient client) {
