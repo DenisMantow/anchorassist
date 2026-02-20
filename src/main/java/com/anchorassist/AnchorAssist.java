@@ -15,6 +15,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.decoration.EndCrystalEntity;
 
 import net.minecraft.item.Items;
+import net.minecraft.item.Item;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.EntityHitResult;
@@ -42,14 +43,13 @@ public class AnchorAssist implements ClientModInitializer {
 
     public static boolean smartCrystalBreakEnabled = true;
     public static boolean autoShieldBreakEnabled = true;
-
     public static boolean crystalOptimizerEnabled = true;
 
     // =========================
-    // CRYSTAL OPTIMIZER SETTINGS
+    // CRYSTAL OPTIMIZER
     // =========================
     private int crystalPlaceDelay = 0;
-    private final int MAX_CRYSTAL_DELAY = 4; // 4 ticks (anti cheat safe)
+    private final int MAX_CRYSTAL_DELAY = 4;
 
     // =========================
     // KEYBINDS
@@ -92,9 +92,6 @@ public class AnchorAssist implements ClientModInitializer {
         });
     }
 
-    // =========================
-    // KEY REGISTER
-    // =========================
     private KeyBinding register(String name, int key) {
         return KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.anchorassist." + name,
@@ -135,50 +132,6 @@ public class AnchorAssist implements ClientModInitializer {
         boolean newValue = !value;
         client.player.sendMessage(Text.literal(name + ": " + (newValue ? "ON" : "OFF")), true);
         return newValue;
-    }
-
-    // =========================
-    // CRYSTAL OPTIMIZER
-    // =========================
-    private void handleCrystalOptimizer(MinecraftClient client) {
-
-        if (!(client.crosshairTarget instanceof BlockHitResult hit)) return;
-
-        BlockPos pos = hit.getBlockPos();
-        BlockState state = client.world.getBlockState(pos);
-
-        if (!state.isOf(Blocks.OBSIDIAN) && !state.isOf(Blocks.BEDROCK))
-            return;
-
-        if (!client.world.getBlockState(pos.up()).isAir()) return;
-        if (!client.world.getBlockState(pos.up(2)).isAir()) return;
-
-        if (client.player.squaredDistanceTo(Vec3d.ofCenter(pos)) > 25)
-            return;
-
-        if (crystalPlaceDelay > 0) {
-            crystalPlaceDelay--;
-            return;
-        }
-
-        int crystalSlot = findHotbarItem(Items.END_CRYSTAL, client);
-        if (crystalSlot == -1) return;
-
-        int oldSlot = client.player.getInventory().selectedSlot;
-
-        client.player.getInventory().selectedSlot = crystalSlot;
-
-        client.interactionManager.interactBlock(
-                client.player,
-                Hand.MAIN_HAND,
-                hit
-        );
-
-        client.player.swingHand(Hand.MAIN_HAND);
-
-        crystalPlaceDelay = MAX_CRYSTAL_DELAY;
-
-        client.player.getInventory().selectedSlot = oldSlot;
     }
 
     // =========================
@@ -236,15 +189,180 @@ public class AnchorAssist implements ClientModInitializer {
     }
 
     // =========================
+    // AUTO ANCHOR (GLOWSTONE SWAP)
+    // =========================
+    private void handleAutoAnchor(MinecraftClient client) {
+
+        if (!(client.crosshairTarget instanceof BlockHitResult hit)) return;
+
+        BlockState state = client.world.getBlockState(hit.getBlockPos());
+        if (!(state.getBlock() instanceof RespawnAnchorBlock)) return;
+        if (state.get(RespawnAnchorBlock.CHARGES) != 0) return;
+
+        int glowSlot = findHotbarItem(Items.GLOWSTONE, client);
+        if (glowSlot == -1) return;
+
+        client.player.getInventory().selectedSlot = glowSlot;
+
+        client.interactionManager.interactBlock(
+                client.player,
+                Hand.MAIN_HAND,
+                hit
+        );
+
+        client.player.swingHand(Hand.MAIN_HAND);
+    }
+
+    // =========================
+    // ANCHOR SAFE
+    // =========================
+    private void handleAnchorSafe(MinecraftClient mc) {
+
+        if (!(mc.crosshairTarget instanceof BlockHitResult hit)) return;
+
+        BlockPos anchorPos = hit.getBlockPos();
+
+        if (!(mc.world.getBlockState(anchorPos).getBlock() instanceof RespawnAnchorBlock))
+            return;
+
+        int charges = mc.world.getBlockState(anchorPos)
+                .get(RespawnAnchorBlock.CHARGES);
+
+        if (charges < 1) return;
+
+        Vec3d playerPos = mc.player.getPos();
+        Vec3d anchorCenter = Vec3d.ofCenter(anchorPos);
+
+        double dx = playerPos.x - anchorCenter.x;
+        double dz = playerPos.z - anchorCenter.z;
+
+        Direction placeDir = Direction.getFacing(dx, 0, dz);
+        if (placeDir.getAxis().isVertical()) return;
+
+        BlockPos safePos = anchorPos.offset(placeDir);
+
+        if (!mc.world.getBlockState(safePos).isAir()) return;
+        if (!mc.world.getBlockState(safePos.down()).isSolidBlock(mc.world, safePos.down())) return;
+
+        mc.interactionManager.interactBlock(
+                mc.player,
+                Hand.MAIN_HAND,
+                new BlockHitResult(
+                        Vec3d.ofCenter(safePos.down()),
+                        Direction.UP,
+                        safePos.down(),
+                        false
+                )
+        );
+
+        mc.player.swingHand(Hand.MAIN_HAND);
+
+        int totemSlot = findHotbarItem(Items.TOTEM_OF_UNDYING, mc);
+        if (totemSlot != -1) {
+            mc.player.getInventory().selectedSlot = totemSlot;
+        }
+    }
+
+    // =========================
+    // FAST TOTEM (MANUAL CLOSE)
+    // =========================
+    private void handleFastTotem(MinecraftClient client) {
+
+        if (!(client.currentScreen instanceof InventoryScreen)) return;
+        if (client.player.currentScreenHandler == null) return;
+
+        int syncId = client.player.currentScreenHandler.syncId;
+        int totemSlot = -1;
+
+        for (int i = 9; i <= 35; i++) {
+            if (client.player.currentScreenHandler.getSlot(i).getStack().getItem()
+                    == Items.TOTEM_OF_UNDYING) {
+                totemSlot = i;
+                break;
+            }
+        }
+
+        if (totemSlot == -1) return;
+
+        int slot7Container = 36 + 7;
+        int offhandContainer = 45;
+
+        if (client.player.currentScreenHandler.getSlot(slot7Container).getStack().isEmpty()) {
+
+            client.interactionManager.clickSlot(
+                    syncId,
+                    totemSlot,
+                    7,
+                    SlotActionType.SWAP,
+                    client.player
+            );
+            return;
+        }
+
+        if (client.player.currentScreenHandler.getSlot(offhandContainer).getStack().isEmpty()) {
+
+            client.interactionManager.clickSlot(
+                    syncId,
+                    totemSlot,
+                    40,
+                    SlotActionType.SWAP,
+                    client.player
+            );
+        }
+    }
+
+    // =========================
+    // CRYSTAL OPTIMIZER
+    // =========================
+    private void handleCrystalOptimizer(MinecraftClient client) {
+
+        if (!(client.crosshairTarget instanceof BlockHitResult hit)) return;
+
+        BlockPos pos = hit.getBlockPos();
+        BlockState state = client.world.getBlockState(pos);
+
+        if (!state.isOf(Blocks.OBSIDIAN) && !state.isOf(Blocks.BEDROCK))
+            return;
+
+        if (!client.world.getBlockState(pos.up()).isAir()) return;
+        if (!client.world.getBlockState(pos.up(2)).isAir()) return;
+
+        if (client.player.squaredDistanceTo(Vec3d.ofCenter(pos)) > 25)
+            return;
+
+        if (crystalPlaceDelay > 0) {
+            crystalPlaceDelay--;
+            return;
+        }
+
+        int crystalSlot = findHotbarItem(Items.END_CRYSTAL, client);
+        if (crystalSlot == -1) return;
+
+        int oldSlot = client.player.getInventory().selectedSlot;
+
+        client.player.getInventory().selectedSlot = crystalSlot;
+
+        client.interactionManager.interactBlock(
+                client.player,
+                Hand.MAIN_HAND,
+                hit
+        );
+
+        client.player.swingHand(Hand.MAIN_HAND);
+
+        crystalPlaceDelay = MAX_CRYSTAL_DELAY;
+
+        client.player.getInventory().selectedSlot = oldSlot;
+    }
+
+    // =========================
     // UTIL
     // =========================
-    private int findHotbarItem(net.minecraft.item.Item item, MinecraftClient client) {
+    private int findHotbarItem(Item item, MinecraftClient client) {
         for (int i = 0; i < 9; i++) {
             if (client.player.getInventory().getStack(i).getItem() == item)
                 return i;
         }
         return -1;
     }
-
-    // AnchorSafe / FastTotem tetap seperti versi kamu sebelumnya
 }
