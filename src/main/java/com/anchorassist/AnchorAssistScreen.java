@@ -8,116 +8,141 @@ import net.minecraft.util.Formatting;
 
 public class AnchorAssistScreen extends Screen {
 
-protected AnchorAssistScreen() {  
-    super(Text.literal("Anchor Assist Settings"));  
-}  
+    protected AnchorAssistScreen() {
+        super(Text.literal("Anchor Assist Settings"));
+    }
 
-@Override  
-protected void init() {  
+    @Override
+    protected void init() {
 
-    int centerX = this.width / 2;  
-    int centerY = this.height / 2;  
+        int centerX = this.width / 2;
+        int startY = 80;
 
-    int buttonWidth = 180;  
-    int buttonHeight = 20;  
-    int spacing = 28;  
+        int buttonWidth = 200;
+        int buttonHeight = 20;
+        int spacing = 24;
 
-    // =========================  
-    // AUTO HIT  
-    // =========================  
-    this.addDrawableChild(ButtonWidget.builder(  
-            getToggleText("Auto Hit", AnchorAssist.autoHitEnabled),  
-            button -> {  
-                AnchorAssist.autoHitEnabled = !AnchorAssist.autoHitEnabled;  
-                button.setMessage(getToggleText("Auto Hit", AnchorAssist.autoHitEnabled));  
-            })  
-            .dimensions(centerX - buttonWidth / 2, centerY - spacing * 2, buttonWidth, buttonHeight)  
-            .build()  
-    );  
+        int y = startY;
 
-    // =========================  
-    // AUTO ANCHOR  
-    // =========================  
-    this.addDrawableChild(ButtonWidget.builder(  
-            getToggleText("Auto Anchor", AnchorAssist.autoAnchorEnabled),  
-            button -> {  
-                AnchorAssist.autoAnchorEnabled = !AnchorAssist.autoAnchorEnabled;  
-                button.setMessage(getToggleText("Auto Anchor", AnchorAssist.autoAnchorEnabled));  
-            })  
-            .dimensions(centerX - buttonWidth / 2, centerY - spacing, buttonWidth, buttonHeight)  
-            .build()  
-    );  
+        // =========================
+        // CORE FEATURES
+        // =========================
 
-    // =========================  
-    // ANCHOR SAFE  
-    // =========================  
-    this.addDrawableChild(ButtonWidget.builder(  
-            getToggleText("Anchor Safe", AnchorAssist.anchorSafeEnabled),  
-            button -> {  
-                AnchorAssist.anchorSafeEnabled = !AnchorAssist.anchorSafeEnabled;  
-                button.setMessage(getToggleText("Anchor Safe", AnchorAssist.anchorSafeEnabled));  
-            })  
-            .dimensions(centerX - buttonWidth / 2, centerY, buttonWidth, buttonHeight)  
-            .build()  
-    );  
+        addToggle(centerX, y, buttonWidth, buttonHeight,
+                "Auto Hit", 
+                () -> AnchorAssist.autoHitEnabled,
+                v -> AnchorAssist.autoHitEnabled = v);
+        y += spacing;
 
-    // =========================  
-    // FAST TOTEM  
-    // =========================  
-    this.addDrawableChild(ButtonWidget.builder(  
-            getToggleText("Fast Totem", AnchorAssist.fastTotemEnabled),  
-            button -> {  
-                AnchorAssist.fastTotemEnabled = !AnchorAssist.fastTotemEnabled;  
-                button.setMessage(getToggleText("Fast Totem", AnchorAssist.fastTotemEnabled));  
-            })  
-            .dimensions(centerX - buttonWidth / 2, centerY + spacing, buttonWidth, buttonHeight)  
-            .build()  
-    );  
-}  
+        addToggle(centerX, y, buttonWidth, buttonHeight,
+                "Auto Anchor",
+                () -> AnchorAssist.autoAnchorEnabled,
+                v -> AnchorAssist.autoAnchorEnabled = v);
+        y += spacing;
 
-// =========================  
-// TEXT STYLE (Modern ON/OFF)  
-// =========================  
-private Text getToggleText(String name, boolean enabled) {  
-    return Text.literal(name + ": ")  
-            .append(enabled  
-                    ? Text.literal("ON").formatted(Formatting.GREEN)  
-                    : Text.literal("OFF").formatted(Formatting.RED)  
-            );  
-}  
+        addToggle(centerX, y, buttonWidth, buttonHeight,
+                "Anchor Safe",
+                () -> AnchorAssist.anchorSafeEnabled,
+                v -> AnchorAssist.anchorSafeEnabled = v);
+        y += spacing;
 
-// =========================  
-// TITLE + KEYBINDS INFO  
-// =========================  
-@Override  
-public void render(DrawContext context, int mouseX, int mouseY, float delta) {  
+        addToggle(centerX, y, buttonWidth, buttonHeight,
+                "Fast Totem",
+                () -> AnchorAssist.fastTotemEnabled,
+                v -> AnchorAssist.fastTotemEnabled = v);
+        y += spacing;
 
-    this.renderBackground(context);  
-    super.render(context, mouseX, mouseY, delta);  
+        // =========================
+        // PVP FEATURES
+        // =========================
 
-    int centerX = this.width / 2;  
+        addToggle(centerX, y, buttonWidth, buttonHeight,
+                "Auto Shield Break",
+                () -> AnchorAssist.autoShieldBreakEnabled,
+                v -> AnchorAssist.autoShieldBreakEnabled = v);
+        y += spacing;
 
-    context.drawCenteredTextWithShadow(  
-            this.textRenderer,  
-            Text.literal("Anchor Assist").formatted(Formatting.AQUA, Formatting.BOLD),  
-            centerX,  
-            30,  
-            0xFFFFFF  
-    );  
+        addToggle(centerX, y, buttonWidth, buttonHeight,
+                "Smart Crystal Break",
+                () -> AnchorAssist.smartCrystalBreakEnabled,
+                v -> AnchorAssist.smartCrystalBreakEnabled = v);
+        y += spacing;
 
-    context.drawCenteredTextWithShadow(  
-            this.textRenderer,  
-            Text.literal("R = Hit | G = Anchor | Y = Safe | T = Totem | Shift = GUI")  
-                    .formatted(Formatting.GRAY),  
-            centerX,  
-            45,  
-            0xFFFFFF  
-    );  
-}  
+        addToggle(centerX, y, buttonWidth, buttonHeight,
+                "Smart Anchor Break",
+                () -> AnchorAssist.smartAnchorBreakEnabled,
+                v -> AnchorAssist.smartAnchorBreakEnabled = v);
+        y += spacing;
 
-@Override  
-public boolean shouldPause() {  
-    return false;  
-}
+        addToggle(centerX, y, buttonWidth, buttonHeight,
+                "W-Tap Assist",
+                () -> AnchorAssist.wTapEnabled,
+                v -> AnchorAssist.wTapEnabled = v);
+    }
 
+    // =========================
+    // TOGGLE BUILDER
+    // =========================
+    private void addToggle(int centerX, int y, int width, int height,
+                           String name,
+                           java.util.function.Supplier<Boolean> getter,
+                           java.util.function.Consumer<Boolean> setter) {
+
+        this.addDrawableChild(ButtonWidget.builder(
+                getToggleText(name, getter.get()),
+                button -> {
+                    boolean newValue = !getter.get();
+                    setter.accept(newValue);
+                    button.setMessage(getToggleText(name, newValue));
+                })
+                .dimensions(centerX - width / 2, y, width, height)
+                .build()
+        );
+    }
+
+    // =========================
+    // MODERN ON/OFF STYLE
+    // =========================
+    private Text getToggleText(String name, boolean enabled) {
+        return Text.literal(name + ": ")
+                .append(enabled
+                        ? Text.literal("ON").formatted(Formatting.GREEN)
+                        : Text.literal("OFF").formatted(Formatting.RED)
+                );
+    }
+
+    // =========================
+    // RENDER
+    // =========================
+    @Override
+    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+
+        this.renderBackground(context);
+        super.render(context, mouseX, mouseY, delta);
+
+        int centerX = this.width / 2;
+
+        context.drawCenteredTextWithShadow(
+                this.textRenderer,
+                Text.literal("Anchor Assist PvP Module")
+                        .formatted(Formatting.AQUA, Formatting.BOLD),
+                centerX,
+                35,
+                0xFFFFFF
+        );
+
+        context.drawCenteredTextWithShadow(
+                this.textRenderer,
+                Text.literal("R=Hit | G=Anchor | Y=Safe | T=Totem | Z=Shield | X=Crystal | C=AnchorBreak | V=W-Tap | Shift=GUI")
+                        .formatted(Formatting.GRAY),
+                centerX,
+                50,
+                0xFFFFFF
+        );
+    }
+
+    @Override
+    public boolean shouldPause() {
+        return false;
+    }
 }
