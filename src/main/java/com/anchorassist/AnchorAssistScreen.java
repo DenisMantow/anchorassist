@@ -16,9 +16,9 @@ public class AnchorAssistScreen extends Screen {
     protected void init() {
 
         int centerX = this.width / 2;
-        int startY = 80;
+        int startY = 70;
 
-        int buttonWidth = 200;
+        int buttonWidth = 220;
         int buttonHeight = 20;
         int spacing = 24;
 
@@ -66,6 +66,13 @@ public class AnchorAssistScreen extends Screen {
                 "Smart Crystal Break",
                 () -> AnchorAssist.smartCrystalBreakEnabled,
                 v -> AnchorAssist.smartCrystalBreakEnabled = v);
+        y += spacing;
+
+        addToggle(centerX, y, buttonWidth, buttonHeight,
+                "Crystal Optimizer",
+                () -> AnchorAssist.crystalOptimizerEnabled,
+                v -> AnchorAssist.crystalOptimizerEnabled = v);
+        y += spacing + 10;
     }
 
     // =========================
@@ -115,16 +122,43 @@ public class AnchorAssistScreen extends Screen {
                 Text.literal("Anchor Assist PvP Module")
                         .formatted(Formatting.AQUA, Formatting.BOLD),
                 centerX,
-                35,
+                30,
                 0xFFFFFF
         );
 
         context.drawCenteredTextWithShadow(
                 this.textRenderer,
-                Text.literal("R=Hit | G=Anchor | Y=Safe | T=Totem | Z=Shield | X=Crystal | Shift=GUI")
+                Text.literal("KEYBINDS")
+                        .formatted(Formatting.YELLOW, Formatting.BOLD),
+                centerX,
+                45,
+                0xFFFFFF
+        );
+
+        context.drawCenteredTextWithShadow(
+                this.textRenderer,
+                Text.literal("R = Hit | G = Anchor | Y = Safe | T = Totem")
                         .formatted(Formatting.GRAY),
                 centerX,
-                50,
+                58,
+                0xFFFFFF
+        );
+
+        context.drawCenteredTextWithShadow(
+                this.textRenderer,
+                Text.literal("Z = Shield | X = Crystal Break | C = Optimizer")
+                        .formatted(Formatting.GRAY),
+                centerX,
+                68,
+                0xFFFFFF
+        );
+
+        context.drawCenteredTextWithShadow(
+                this.textRenderer,
+                Text.literal("Right Shift = Open GUI")
+                        .formatted(Formatting.DARK_GRAY),
+                centerX,
+                78,
                 0xFFFFFF
         );
     }
