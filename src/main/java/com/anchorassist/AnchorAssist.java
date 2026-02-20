@@ -36,6 +36,7 @@ public class AnchorAssist implements ClientModInitializer {
     public static boolean autoAnchorEnabled = true;
     public static boolean fastTotemEnabled = true;
     public static boolean anchorSafeEnabled = true;
+    public static boolean dTapEnabled = true;
 
     // =========================
     // KEYBINDS
@@ -44,6 +45,8 @@ public class AnchorAssist implements ClientModInitializer {
     private static KeyBinding toggleAnchorKey;
     private static KeyBinding toggleTotemKey;
     private static KeyBinding toggleAnchorSafeKey;
+    private static KeyBinding toggleDTapKey;
+    private static KeyBinding triggerDTapKey;
     private static KeyBinding openGuiKey;
 
     @Override
@@ -74,6 +77,20 @@ public class AnchorAssist implements ClientModInitializer {
                 "key.anchorassist.anchorsafe",
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_Y,
+                "category.anchorassist"
+        ));
+
+        toggleDTapKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.anchorassist.toggledtap",
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_U,
+                "category.anchorassist"
+        ));
+
+        triggerDTapKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.anchorassist.triggerdtap",
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_V,
                 "category.anchorassist"
         ));
 
@@ -111,6 +128,17 @@ public class AnchorAssist implements ClientModInitializer {
                 client.player.sendMessage(Text.literal("Anchor Safe: " + (anchorSafeEnabled ? "ON" : "OFF")), true);
             }
 
+            while (toggleDTapKey.wasPressed()) {
+                dTapEnabled = !dTapEnabled;
+                client.player.sendMessage(Text.literal("D-Tap Crystal: " + (dTapEnabled ? "ON" : "OFF")), true);
+            }
+
+            while (triggerDTapKey.wasPressed()) {
+                if (dTapEnabled) {
+                    handleDTap(client);
+                }
+            }
+
             while (openGuiKey.wasPressed()) {
                 client.setScreen(new AnchorAssistScreen());
             }
@@ -144,7 +172,7 @@ public class AnchorAssist implements ClientModInitializer {
     }
 
     // =========================
-    // AUTO ANCHOR (1 CHARGE)
+    // AUTO ANCHOR
     // =========================
     private void handleAutoAnchor(MinecraftClient client) {
 
@@ -155,7 +183,6 @@ public class AnchorAssist implements ClientModInitializer {
         if (!(state.getBlock() instanceof RespawnAnchorBlock)) return;
 
         int charges = state.get(RespawnAnchorBlock.CHARGES);
-
         if (charges != 0) return;
 
         for (int i = 0; i < 9; i++) {
@@ -176,7 +203,7 @@ public class AnchorAssist implements ClientModInitializer {
     }
 
     // =========================
-    // ANCHOR SAFE + AUTO TOTEM
+    // ANCHOR SAFE
     // =========================
     private void handleAnchorSafe(MinecraftClient mc) {
 
@@ -190,34 +217,27 @@ public class AnchorAssist implements ClientModInitializer {
         int charges = mc.world.getBlockState(anchorPos)
                 .get(RespawnAnchorBlock.CHARGES);
 
-        if (charges < 1)
-            return;
+        if (charges < 1) return;
 
         Vec3d playerPos = mc.player.getPos();
         Vec3d anchorCenter = Vec3d.ofCenter(anchorPos);
 
         double dx = playerPos.x - anchorCenter.x;
         double dz = playerPos.z - anchorCenter.z;
-
         double distance = Math.sqrt(dx * dx + dz * dz);
 
-        if (distance < 1.2 || distance > 3.0)
-            return;
+        if (distance < 1.2 || distance > 3.0) return;
 
         Direction dir = Direction.getFacing(dx, 0, dz);
         if (dir.getAxis().isVertical()) return;
 
         BlockPos safePos = anchorPos.offset(dir);
 
-        if (!mc.world.getBlockState(safePos).isAir())
-            return;
+        if (!mc.world.getBlockState(safePos).isAir()) return;
 
         BlockPos floor = safePos.down();
+        if (!mc.world.getBlockState(floor).isSolidBlock(mc.world, floor)) return;
 
-        if (!mc.world.getBlockState(floor).isSolidBlock(mc.world, floor))
-            return;
-
-        // SWITCH KE GLOWSTONE
         int glowSlot = -1;
         for (int i = 0; i < 9; i++) {
             if (mc.player.getInventory().getStack(i).getItem() == Items.GLOWSTONE) {
@@ -225,12 +245,10 @@ public class AnchorAssist implements ClientModInitializer {
                 break;
             }
         }
-
         if (glowSlot == -1) return;
 
         mc.player.getInventory().selectedSlot = glowSlot;
 
-        // PLACE SAFE BLOCK
         mc.interactionManager.interactBlock(
                 mc.player,
                 Hand.MAIN_HAND,
@@ -244,12 +262,7 @@ public class AnchorAssist implements ClientModInitializer {
 
         mc.player.swingHand(Hand.MAIN_HAND);
 
-        // SWITCH KE TOTEM
-        if (mc.player.getInventory().getStack(7).getItem() == Items.TOTEM_OF_UNDYING) {
-            mc.player.getInventory().selectedSlot = 7;
-            return;
-        }
-
+        // switch to totem
         for (int i = 0; i < 9; i++) {
             if (mc.player.getInventory().getStack(i).getItem() == Items.TOTEM_OF_UNDYING) {
                 mc.player.getInventory().selectedSlot = i;
@@ -259,7 +272,56 @@ public class AnchorAssist implements ClientModInitializer {
     }
 
     // =========================
-    // FAST TOTEM (1.20.1)
+    // D-TAP CRYSTAL (MANUAL)
+    // =========================
+    private void handleDTap(MinecraftClient mc) {
+
+        if (!(mc.crosshairTarget instanceof BlockHitResult blockHit)) return;
+
+        int crystalSlot = -1;
+
+        for (int i = 0; i < 9; i++) {
+            if (mc.player.getInventory().getStack(i).getItem() == Items.END_CRYSTAL) {
+                crystalSlot = i;
+                break;
+            }
+        }
+
+        if (crystalSlot == -1) return;
+
+        mc.player.getInventory().selectedSlot = crystalSlot;
+
+        // 1st place
+        mc.interactionManager.interactBlock(
+                mc.player,
+                Hand.MAIN_HAND,
+                blockHit
+        );
+        mc.player.swingHand(Hand.MAIN_HAND);
+
+        // 1st explode
+        if (mc.crosshairTarget instanceof EntityHitResult entityHit) {
+            mc.interactionManager.attackEntity(mc.player, entityHit.getEntity());
+            mc.player.swingHand(Hand.MAIN_HAND);
+        }
+
+        // 2nd place
+        mc.interactionManager.interactBlock(
+                mc.player,
+                Hand.MAIN_HAND,
+                blockHit
+        );
+        mc.player.swingHand(Hand.MAIN_HAND);
+
+        // 2nd explode
+        if (mc.crosshairTarget instanceof EntityHitResult entityHit2) {
+            mc.interactionManager.attackEntity(mc.player, entityHit2.getEntity());
+            mc.player.swingHand(Hand.MAIN_HAND);
+        }
+    }
+
+    // =========================
+    // FAST TOTEM
     // =========================
     private void handleFastTotem(MinecraftClient client) {
 
@@ -282,37 +344,12 @@ public class AnchorAssist implements ClientModInitializer {
 
         if (containerTotemSlot == -1) return;
 
-        int slot7Container = 43;
-
-        if (client.player.currentScreenHandler
-                .getSlot(slot7Container)
-                .getStack()
-                .isEmpty()) {
-
-            client.interactionManager.clickSlot(
-                    syncId,
-                    containerTotemSlot,
-                    7,
-                    SlotActionType.SWAP,
-                    client.player
-            );
-            return;
-        }
-
-        int offhandContainer = 45;
-
-        if (client.player.currentScreenHandler
-                .getSlot(offhandContainer)
-                .getStack()
-                .isEmpty()) {
-
-            client.interactionManager.clickSlot(
-                    syncId,
-                    containerTotemSlot,
-                    40,
-                    SlotActionType.SWAP,
-                    client.player
-            );
-        }
+        client.interactionManager.clickSlot(
+                syncId,
+                containerTotemSlot,
+                40,
+                SlotActionType.SWAP,
+                client.player
+        );
     }
 }
