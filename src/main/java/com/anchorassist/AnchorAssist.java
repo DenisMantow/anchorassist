@@ -55,7 +55,6 @@ public class AnchorAssist implements ClientModInitializer {
     private static KeyBinding openGuiKey;
     private static KeyBinding smartCrystalKey;
     private static KeyBinding autoShieldKey;
-
     private static KeyBinding crystalOptimizerV2Key; // NEW
 
     @Override
@@ -68,7 +67,6 @@ public class AnchorAssist implements ClientModInitializer {
         openGuiKey = register("opengui", GLFW.GLFW_KEY_RIGHT_SHIFT);
         smartCrystalKey = register("smartcrystal", GLFW.GLFW_KEY_X);
         autoShieldKey = register("autoshield", GLFW.GLFW_KEY_Z);
-
         crystalOptimizerV2Key = register("crystaloptv2", GLFW.GLFW_KEY_B);
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
