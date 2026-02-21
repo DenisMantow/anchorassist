@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "id": "anchorassist",
   "version": "v2.1",
-  "name": "Denis Crystal PVP MOD",
+  "name": "BNDTxDen Crystal PVP MOD",
   "description": "Competitive Crystal PvP Enhancement Client-Side Module built for High-Level Gameplay.",
   "authors": ["Denis as BNDTxDen"],
   "license": "MIT",
-  "icon": "assets/anchorassist/icon.png",
+  "icon": "icon.png",
   "environment": "client",
   "entrypoints": {
     "client": ["com.anchorassist.AnchorAssist"]
