@@ -8,6 +8,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.gui.screen.ingame.InventoryScreen;
+import net.minecraft.client.gui.screen.ingame.HandledScreen;
 
 import net.minecraft.text.Text;
 
@@ -25,6 +26,7 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.block.RespawnAnchorBlock;
 import net.minecraft.block.BlockState;
 
+import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
 
 import org.lwjgl.glfw.GLFW;
@@ -50,13 +52,9 @@ public class AnchorAssist implements ClientModInitializer {
     // FAST TOTEM SYSTEM
     // =========================
     private int fastTotemDelay = 0;
-    private int fastTotemStage = 0;
-    // 0 = idle
-    // 1 = slot7 sudah diisi
-    // 2 = offhand sudah diisi
 
     private int getRandomDelay() {
-        return ThreadLocalRandom.current().nextInt(1, 4); // 1-3 tick
+        return ThreadLocalRandom.current().nextInt(1, 4); // 1–3 tick
     }
 
     // =========================
@@ -103,12 +101,7 @@ public class AnchorAssist implements ClientModInitializer {
 
     private KeyBinding register(String name, int key) {
         return KeyBindingHelper.registerKeyBinding(
-                new KeyBinding(
-                        name,
-                        InputUtil.Type.KEYSYM,
-                        key,
-                        "BNDTxDen MOD"
-                )
+                new KeyBinding(name, InputUtil.Type.KEYSYM, key, "BNDTxDen MOD")
         );
     }
 
@@ -154,7 +147,6 @@ public class AnchorAssist implements ClientModInitializer {
     // AUTO HIT
     // =========================
     private void handleAutoHit(MinecraftClient client) {
-
         if (client.crosshairTarget instanceof EntityHitResult hit &&
                 hit.getEntity() instanceof PlayerEntity target) {
 
@@ -171,7 +163,6 @@ public class AnchorAssist implements ClientModInitializer {
     // SMART CRYSTAL BREAK
     // =========================
     private void handleSmartCrystalBreak(MinecraftClient client) {
-
         if (!(client.crosshairTarget instanceof EntityHitResult hit)) return;
         if (!(hit.getEntity() instanceof EndCrystalEntity crystal)) return;
 
@@ -230,26 +221,22 @@ public class AnchorAssist implements ClientModInitializer {
         if (!(mc.crosshairTarget instanceof BlockHitResult hit)) return;
 
         BlockPos anchorPos = hit.getBlockPos();
-
         if (!(mc.world.getBlockState(anchorPos).getBlock() instanceof RespawnAnchorBlock))
             return;
 
         int charges = mc.world.getBlockState(anchorPos)
                 .get(RespawnAnchorBlock.CHARGES);
-
         if (charges < 1) return;
 
         Vec3d playerPos = mc.player.getPos();
         Vec3d anchorCenter = Vec3d.ofCenter(anchorPos);
 
-        double dx = playerPos.x - anchorCenter.x;
-        double dz = playerPos.z - anchorCenter.z;
+        Direction placeDir = Direction.getFacing(
+                playerPos.x - anchorCenter.x, 0, playerPos.z - anchorCenter.z);
 
-        Direction placeDir = Direction.getFacing(dx, 0, dz);
         if (placeDir.getAxis().isVertical()) return;
 
         BlockPos safePos = anchorPos.offset(placeDir);
-
         if (!mc.world.getBlockState(safePos).isAir()) return;
         if (!mc.world.getBlockState(safePos.down()).isSolidBlock(mc.world, safePos.down())) return;
 
@@ -265,140 +252,87 @@ public class AnchorAssist implements ClientModInitializer {
         );
 
         mc.player.swingHand(Hand.MAIN_HAND);
-
-        int totemSlot = findHotbarItem(Items.TOTEM_OF_UNDYING, mc);
-        if (totemSlot != -1)
-            mc.player.getInventory().selectedSlot = totemSlot;
     }
 
     // =========================
-    // FAST TOTEM (RANDOM DELAY 1-3 TICK)
+    // FAST TOTEM (MOUSE PRIORITY – 1.20.1)
     // =========================
     private void handleFastTotem(MinecraftClient client) {
 
-    if (!(client.currentScreen instanceof InventoryScreen)) return;
-    if (client.player.currentScreenHandler == null) return;
+        if (!(client.currentScreen instanceof InventoryScreen)) return;
+        if (client.player.currentScreenHandler == null) return;
 
-    if (fastTotemDelay > 0) {
-        fastTotemDelay--;
-        return;
-    }
-
-    int syncId = client.player.currentScreenHandler.syncId;
-
-    // =========================
-    // Cari semua slot inventory yang berisi totem
-    // =========================
-    java.util.List<Integer> totemSlots = new java.util.ArrayList<>();
-
-    for (int i = 9; i <= 35; i++) {
-        if (client.player.currentScreenHandler.getSlot(i).getStack().getItem()
-                == Items.TOTEM_OF_UNDYING) {
-            totemSlots.add(i);
-        }
-    }
-
-    if (totemSlots.isEmpty()) {
-        fastTotemStage = 0;
-        return;
-    }
-
-    int slot7Container = 36 + 7;
-    int offhandContainer = 45;
-
-    boolean slot7Empty = client.player.currentScreenHandler
-            .getSlot(slot7Container).getStack().isEmpty();
-
-    boolean offhandEmpty = client.player.currentScreenHandler
-            .getSlot(offhandContainer).getStack().isEmpty();
-
-    // Kalau dua-duanya sudah ada totem → reset
-    if (!slot7Empty && !offhandEmpty) {
-        fastTotemStage = 0;
-        return;
-    }
-
-    // Ambil slot totem random
-    int randomIndex = ThreadLocalRandom.current().nextInt(totemSlots.size());
-    int randomTotemSlot = totemSlots.get(randomIndex);
-
-    // =========================
-    // Isi salah satu dulu
-    // =========================
-    if (slot7Empty && offhandEmpty) {
-
-        // Random pilih mana dulu
-        if (ThreadLocalRandom.current().nextBoolean()) {
-
-            // Slot 7 dulu
-            client.interactionManager.clickSlot(
-                    syncId,
-                    randomTotemSlot,
-                    7,
-                    SlotActionType.SWAP,
-                    client.player
-            );
-
-            fastTotemStage = 1;
-        } else {
-
-            // Offhand dulu
-            client.interactionManager.clickSlot(
-                    syncId,
-                    randomTotemSlot,
-                    40,
-                    SlotActionType.SWAP,
-                    client.player
-            );
-
-            fastTotemStage = 2;
+        if (fastTotemDelay > 0) {
+            fastTotemDelay--;
+            return;
         }
 
-        fastTotemDelay = getRandomDelay();
-        return;
-    }
+        int syncId = client.player.currentScreenHandler.syncId;
 
-    // =========================
-    // Jika salah satu kosong
-    // =========================
-    if (slot7Empty) {
+        int slot7 = 36 + 7;
+        int offhand = 45;
+
+        boolean slot7Empty = client.player.currentScreenHandler.getSlot(slot7).getStack().isEmpty();
+        boolean offhandEmpty = client.player.currentScreenHandler.getSlot(offhand).getStack().isEmpty();
+
+        if (!slot7Empty && !offhandEmpty) return;
+
+        int nearestTotemSlot = findNearestTotemSlot(client);
+        if (nearestTotemSlot == -1) return;
+
+        int targetSlot = slot7Empty ? 7 : 40;
 
         client.interactionManager.clickSlot(
                 syncId,
-                randomTotemSlot,
-                7,
+                nearestTotemSlot,
+                targetSlot,
                 SlotActionType.SWAP,
                 client.player
         );
 
         fastTotemDelay = getRandomDelay();
-        return;
     }
 
-    if (offhandEmpty) {
+    // =========================
+    // FIND NEAREST TOTEM SLOT (1.20.1 SAFE)
+    // =========================
+    private int findNearestTotemSlot(MinecraftClient client) {
 
-        client.interactionManager.clickSlot(
-                syncId,
-                randomTotemSlot,
-                40,
-                SlotActionType.SWAP,
-                client.player
-        );
+        if (!(client.currentScreen instanceof HandledScreen<?> screen)) return -1;
 
-        fastTotemDelay = getRandomDelay();
-        return;
-    }
-}
-    
-// =========================
-// HOTBAR FINDER
-// =========================
-private int findHotbarItem(net.minecraft.item.Item item, MinecraftClient client) {
-    for (int i = 0; i < 9; i++) {
-        if (client.player.getInventory().getStack(i).getItem() == item) {
-            return i;
+        double mouseX = screen.getMouseX();
+        double mouseY = screen.getMouseY();
+
+        int guiLeft = screen.x;
+        int guiTop = screen.y;
+
+        double closest = Double.MAX_VALUE;
+        int closestSlot = -1;
+
+        for (int i = 9; i <= 35; i++) {
+            Slot slot = screen.getScreenHandler().getSlot(i);
+            if (slot.getStack().getItem() != Items.TOTEM_OF_UNDYING) continue;
+
+            double x = guiLeft + slot.x + 8;
+            double y = guiTop + slot.y + 8;
+
+            double dist = Math.hypot(mouseX - x, mouseY - y);
+            if (dist < closest) {
+                closest = dist;
+                closestSlot = i;
+            }
         }
+        return closestSlot;
     }
-    return -1;
-}
+
+    // =========================
+    // HOTBAR FINDER
+    // =========================
+    private int findHotbarItem(net.minecraft.item.Item item, MinecraftClient client) {
+        for (int i = 0; i < 9; i++) {
+            if (client.player.getInventory().getStack(i).getItem() == item)
+                return i;
+        }
+        return -1;
+    }
 }
