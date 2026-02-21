@@ -66,6 +66,11 @@ public class AnchorAssistScreen extends Screen {
                 "Smart Crystal Break",
                 () -> AnchorAssist.smartCrystalBreakEnabled,
                 v -> AnchorAssist.smartCrystalBreakEnabled = v);
+
+        addToggle(centerX, y, buttonWidth, buttonHeight,
+                "Crystal Optimizer",
+                () -> walksy.optimizer.CrystalOptimizer.enabled,
+                v -> walksy.optimizer.CrystalOptimizer.enabled = v);
     }
 
     // =========================
