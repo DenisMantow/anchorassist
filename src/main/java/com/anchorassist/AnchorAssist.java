@@ -40,7 +40,6 @@ public class AnchorAssist implements ClientModInitializer {
     public static boolean autoAnchorEnabled = true;
     public static boolean fastTotemEnabled = true;
     public static boolean anchorSafeEnabled = true;
-
     public static boolean smartCrystalBreakEnabled = true;
     public static boolean autoShieldBreakEnabled = true;
 
@@ -66,14 +65,8 @@ public class AnchorAssist implements ClientModInitializer {
         openGuiKey = register("opengui", GLFW.GLFW_KEY_RIGHT_SHIFT);
         smartCrystalKey = register("smartcrystal", GLFW.GLFW_KEY_X);
         autoShieldKey = register("autoshield", GLFW.GLFW_KEY_Z);
-        crystalOptimizerKey = KeyBindingHelper.registerKeyBinding(
-        new KeyBinding(
-                "key.anchorassist.crystal_optimizer",
-                InputUtil.Type.KEYSYM,
-                GLFW.GLFW_KEY_C,
-                "category.anchorassist"
-        )
-);
+
+        crystalOptimizerKey = register("crystal_optimizer", GLFW.GLFW_KEY_C);
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
 
@@ -87,22 +80,25 @@ public class AnchorAssist implements ClientModInitializer {
             if (fastTotemEnabled) handleFastTotem(client);
             if (smartCrystalBreakEnabled) handleSmartCrystalBreak(client);
             if (autoShieldBreakEnabled) handleAutoShieldBreak(client);
-});
-        
-        ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            CrystalOptimizer.onTick();
-});
+
+            if (CrystalOptimizer.enabled) {
+                CrystalOptimizer.onTick();
+            }
+        });
+    }
 
     // =========================
     // KEY REGISTER
     // =========================
     private KeyBinding register(String name, int key) {
-        return KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "key.anchorassist." + name,
-                InputUtil.Type.KEYSYM,
-                key,
-                "category.anchorassist"
-        ));
+        return KeyBindingHelper.registerKeyBinding(
+                new KeyBinding(
+                        "key.anchorassist." + name,
+                        InputUtil.Type.KEYSYM,
+                        key,
+                        "category.anchorassist"
+                )
+        );
     }
 
     private void handleToggles(MinecraftClient client) {
@@ -130,12 +126,16 @@ public class AnchorAssist implements ClientModInitializer {
 
         while (crystalOptimizerKey.wasPressed()) {
             CrystalOptimizer.enabled = !CrystalOptimizer.enabled;
+            client.player.sendMessage(
+                    Text.literal("Crystal Optimizer: " +
+                            (CrystalOptimizer.enabled ? "ON" : "OFF")), true);
         }
     }
 
     private boolean toggle(MinecraftClient client, boolean value, String name) {
         boolean newValue = !value;
-        client.player.sendMessage(Text.literal(name + ": " + (newValue ? "ON" : "OFF")), true);
+        client.player.sendMessage(
+                Text.literal(name + ": " + (newValue ? "ON" : "OFF")), true);
         return newValue;
     }
 
@@ -194,7 +194,7 @@ public class AnchorAssist implements ClientModInitializer {
     }
 
     // =========================
-    // AUTO ANCHOR (SWAP TO GLOWSTONE)
+    // AUTO ANCHOR
     // =========================
     private void handleAutoAnchor(MinecraftClient client) {
 
@@ -219,14 +219,13 @@ public class AnchorAssist implements ClientModInitializer {
     }
 
     // =========================
-    // ANCHOR SAFE (PERFECT SIDE + AUTO TOTEM)
+    // ANCHOR SAFE
     // =========================
     private void handleAnchorSafe(MinecraftClient mc) {
 
         if (!(mc.crosshairTarget instanceof BlockHitResult hit)) return;
 
         BlockPos anchorPos = hit.getBlockPos();
-
         if (!(mc.world.getBlockState(anchorPos).getBlock() instanceof RespawnAnchorBlock))
             return;
 
@@ -235,33 +234,6 @@ public class AnchorAssist implements ClientModInitializer {
 
         if (charges < 1) return;
 
-        Vec3d playerPos = mc.player.getPos();
-        Vec3d anchorCenter = Vec3d.ofCenter(anchorPos);
-
-        double dx = playerPos.x - anchorCenter.x;
-        double dz = playerPos.z - anchorCenter.z;
-
-        Direction placeDir = Direction.getFacing(dx, 0, dz);
-        if (placeDir.getAxis().isVertical()) return;
-
-        BlockPos safePos = anchorPos.offset(placeDir);
-
-        if (!mc.world.getBlockState(safePos).isAir()) return;
-        if (!mc.world.getBlockState(safePos.down()).isSolidBlock(mc.world, safePos.down())) return;
-
-        mc.interactionManager.interactBlock(
-                mc.player,
-                Hand.MAIN_HAND,
-                new BlockHitResult(
-                        Vec3d.ofCenter(safePos.down()),
-                        Direction.UP,
-                        safePos.down(),
-                        false
-                )
-        );
-
-        mc.player.swingHand(Hand.MAIN_HAND);
-
         int totemSlot = findHotbarItem(Items.TOTEM_OF_UNDYING, mc);
         if (totemSlot != -1) {
             mc.player.getInventory().selectedSlot = totemSlot;
@@ -269,7 +241,7 @@ public class AnchorAssist implements ClientModInitializer {
     }
 
     // =========================
-    // FAST TOTEM (NO AUTO CLOSE)
+    // FAST TOTEM
     // =========================
     private void handleFastTotem(MinecraftClient client) {
 
@@ -289,22 +261,10 @@ public class AnchorAssist implements ClientModInitializer {
 
         if (totemSlot == -1) return;
 
-        int slot7Container = 36 + 7;
         int offhandContainer = 45;
 
-        if (client.player.currentScreenHandler.getSlot(slot7Container).getStack().isEmpty()) {
-
-            client.interactionManager.clickSlot(
-                    syncId,
-                    totemSlot,
-                    7,
-                    SlotActionType.SWAP,
-                    client.player
-            );
-            return;
-        }
-
-        if (client.player.currentScreenHandler.getSlot(offhandContainer).getStack().isEmpty()) {
+        if (client.player.currentScreenHandler.getSlot(offhandContainer)
+                .getStack().isEmpty()) {
 
             client.interactionManager.clickSlot(
                     syncId,
