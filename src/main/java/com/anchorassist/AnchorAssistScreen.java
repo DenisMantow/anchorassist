@@ -25,10 +25,7 @@ public class AnchorAssistScreen extends Screen {
         int leftX = centerX - 190;
         int rightX = centerX + 20;
 
-        // =========================
         // LEFT SIDE (4)
-        // =========================
-
         addToggle(leftX, startY + spacing * 0, buttonWidth, buttonHeight,
                 "Auto Hit",
                 () -> AnchorAssist.autoHitEnabled,
@@ -49,10 +46,7 @@ public class AnchorAssistScreen extends Screen {
                 () -> AnchorAssist.fastTotemEnabled,
                 v -> AnchorAssist.fastTotemEnabled = v);
 
-        // =========================
         // RIGHT SIDE (3)
-        // =========================
-
         addToggle(rightX, startY + spacing * 0, buttonWidth, buttonHeight,
                 "Auto Shield Break",
                 () -> AnchorAssist.autoShieldBreakEnabled,
@@ -69,9 +63,6 @@ public class AnchorAssistScreen extends Screen {
                 v -> AnchorAssist.crystalOptimizerV2Enabled = v);
     }
 
-    // =========================
-    // TOGGLE BUILDER
-    // =========================
     private void addToggle(int x, int y, int width, int height,
                            String name,
                            java.util.function.Supplier<Boolean> getter,
@@ -89,9 +80,6 @@ public class AnchorAssistScreen extends Screen {
         );
     }
 
-    // =========================
-    // ON/OFF STYLE
-    // =========================
     private Text getToggleText(String name, boolean enabled) {
         return Text.literal(name + ": ")
                 .append(enabled
@@ -100,9 +88,6 @@ public class AnchorAssistScreen extends Screen {
                 );
     }
 
-    // =========================
-    // RENDER
-    // =========================
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
 
@@ -160,7 +145,5 @@ public class AnchorAssistScreen extends Screen {
     @Override
     public boolean shouldPause() {
         return false;
-    }
-}    return false;
     }
 }
