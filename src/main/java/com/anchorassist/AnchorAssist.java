@@ -276,79 +276,115 @@ public class AnchorAssist implements ClientModInitializer {
     // =========================
     private void handleFastTotem(MinecraftClient client) {
 
-        if (!(client.currentScreen instanceof InventoryScreen)) return;
-        if (client.player.currentScreenHandler == null) return;
+    if (!(client.currentScreen instanceof InventoryScreen)) return;
+    if (client.player.currentScreenHandler == null) return;
 
-        if (fastTotemDelay > 0) {
-            fastTotemDelay--;
-            return;
+    if (fastTotemDelay > 0) {
+        fastTotemDelay--;
+        return;
+    }
+
+    int syncId = client.player.currentScreenHandler.syncId;
+
+    // =========================
+    // Cari semua slot inventory yang berisi totem
+    // =========================
+    java.util.List<Integer> totemSlots = new java.util.ArrayList<>();
+
+    for (int i = 9; i <= 35; i++) {
+        if (client.player.currentScreenHandler.getSlot(i).getStack().getItem()
+                == Items.TOTEM_OF_UNDYING) {
+            totemSlots.add(i);
         }
+    }
 
-        int syncId = client.player.currentScreenHandler.syncId;
-        int totemSlot = -1;
+    if (totemSlots.isEmpty()) {
+        fastTotemStage = 0;
+        return;
+    }
 
-        for (int i = 9; i <= 35; i++) {
-            if (client.player.currentScreenHandler.getSlot(i).getStack().getItem()
-                    == Items.TOTEM_OF_UNDYING) {
-                totemSlot = i;
-                break;
-            }
-        }
+    int slot7Container = 36 + 7;
+    int offhandContainer = 45;
 
-        if (totemSlot == -1) {
-            fastTotemStage = 0;
-            return;
-        }
+    boolean slot7Empty = client.player.currentScreenHandler
+            .getSlot(slot7Container).getStack().isEmpty();
 
-        int slot7Container = 36 + 7;
-        int offhandContainer = 45;
+    boolean offhandEmpty = client.player.currentScreenHandler
+            .getSlot(offhandContainer).getStack().isEmpty();
 
-        boolean slot7Empty = client.player.currentScreenHandler
-                .getSlot(slot7Container).getStack().isEmpty();
+    // Kalau dua-duanya sudah ada totem → reset
+    if (!slot7Empty && !offhandEmpty) {
+        fastTotemStage = 0;
+        return;
+    }
 
-        boolean offhandEmpty = client.player.currentScreenHandler
-                .getSlot(offhandContainer).getStack().isEmpty();
+    // Ambil slot totem random
+    int randomIndex = ThreadLocalRandom.current().nextInt(totemSlots.size());
+    int randomTotemSlot = totemSlots.get(randomIndex);
 
-        if (slot7Empty && fastTotemStage == 0) {
+    // =========================
+    // Isi salah satu dulu
+    // =========================
+    if (slot7Empty && offhandEmpty) {
 
+        // Random pilih mana dulu
+        if (ThreadLocalRandom.current().nextBoolean()) {
+
+            // Slot 7 dulu
             client.interactionManager.clickSlot(
                     syncId,
-                    totemSlot,
+                    randomTotemSlot,
                     7,
                     SlotActionType.SWAP,
                     client.player
             );
 
             fastTotemStage = 1;
-            fastTotemDelay = getRandomDelay();
-            return;
-        }
+        } else {
 
-        if (offhandEmpty && fastTotemStage == 1) {
-
+            // Offhand dulu
             client.interactionManager.clickSlot(
                     syncId,
-                    totemSlot,
+                    randomTotemSlot,
                     40,
                     SlotActionType.SWAP,
                     client.player
             );
 
             fastTotemStage = 2;
-            fastTotemDelay = getRandomDelay();
-            return;
         }
 
-        if (!slot7Empty && !offhandEmpty) {
-            fastTotemStage = 0;
-        }
+        fastTotemDelay = getRandomDelay();
+        return;
     }
 
-    private int findHotbarItem(net.minecraft.item.Item item, MinecraftClient client) {
-        for (int i = 0; i < 9; i++) {
-            if (client.player.getInventory().getStack(i).getItem() == item)
-                return i;
-        }
-        return -1;
+    // =========================
+    // Jika salah satu kosong
+    // =========================
+    if (slot7Empty) {
+
+        client.interactionManager.clickSlot(
+                syncId,
+                randomTotemSlot,
+                7,
+                SlotActionType.SWAP,
+                client.player
+        );
+
+        fastTotemDelay = getRandomDelay();
+        return;
+    }
+
+    if (offhandEmpty) {
+
+        client.interactionManager.clickSlot(
+                syncId,
+                randomTotemSlot,
+                40,
+                SlotActionType.SWAP,
+                client.player
+        );
+
+        fastTotemDelay = getRandomDelay();
     }
 }
