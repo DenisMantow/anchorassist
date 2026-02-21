@@ -42,9 +42,6 @@ public class AnchorAssist implements ClientModInitializer {
     public static boolean smartCrystalBreakEnabled = true;
     public static boolean autoShieldBreakEnabled = true;
 
-    // NEW
-    public static boolean crystalOptimizerV2Enabled = true;
-
     // =========================
     // KEYBINDS
     // =========================
@@ -55,7 +52,6 @@ public class AnchorAssist implements ClientModInitializer {
     private static KeyBinding openGuiKey;
     private static KeyBinding smartCrystalKey;
     private static KeyBinding autoShieldKey;
-    private static KeyBinding crystalOptimizerV2Key; // NEW
 
     @Override
     public void onInitializeClient() {
@@ -67,7 +63,6 @@ public class AnchorAssist implements ClientModInitializer {
         openGuiKey = register("opengui", GLFW.GLFW_KEY_RIGHT_SHIFT);
         smartCrystalKey = register("smartcrystal", GLFW.GLFW_KEY_X);
         autoShieldKey = register("autoshield", GLFW.GLFW_KEY_Z);
-        crystalOptimizerV2Key = register("crystaloptv2", GLFW.GLFW_KEY_B);
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
 
@@ -81,7 +76,6 @@ public class AnchorAssist implements ClientModInitializer {
             if (fastTotemEnabled) handleFastTotem(client);
             if (smartCrystalBreakEnabled) handleSmartCrystalBreak(client);
             if (autoShieldBreakEnabled) handleAutoShieldBreak(client);
-            if (crystalOptimizerV2Enabled) handleCrystalOptimizerV2(client);
         });
     }
 
@@ -117,9 +111,6 @@ public class AnchorAssist implements ClientModInitializer {
         while (autoShieldKey.wasPressed())
             autoShieldBreakEnabled = toggle(client, autoShieldBreakEnabled, "Auto Shield Break");
 
-        while (crystalOptimizerV2Key.wasPressed())
-            crystalOptimizerV2Enabled = toggle(client, crystalOptimizerV2Enabled, "Crystal Optimizer V2");
-
         while (openGuiKey.wasPressed())
             client.setScreen(new AnchorAssistScreen());
     }
@@ -128,35 +119,6 @@ public class AnchorAssist implements ClientModInitializer {
         boolean newValue = !value;
         client.player.sendMessage(Text.literal(name + ": " + (newValue ? "ON" : "OFF")), true);
         return newValue;
-    }
-
-    // =========================
-    // CRYSTAL OPTIMIZER V2 (MANUAL SMOOTH)
-    // =========================
-    private void handleCrystalOptimizerV2(MinecraftClient client) {
-
-        if (client.player.getMainHandStack().getItem() != Items.END_CRYSTAL)
-            return;
-
-        // Remove ghost crystals instantly
-        client.world.getEntities().forEach(entity -> {
-            if (entity instanceof EndCrystalEntity crystal) {
-                if (!crystal.isAlive()) {
-                    crystal.discard();
-                }
-            }
-        });
-
-        // Ignore crystal hitbox blocking placement
-        if (client.crosshairTarget instanceof EntityHitResult hit &&
-                hit.getEntity() instanceof EndCrystalEntity) {
-            client.crosshairTarget = null;
-        }
-
-        // Smooth swing sync
-        if (client.options.useKey.isPressed()) {
-            client.player.swingHand(Hand.MAIN_HAND);
-        }
     }
 
     // =========================
@@ -214,7 +176,7 @@ public class AnchorAssist implements ClientModInitializer {
     }
 
     // =========================
-    // AUTO ANCHOR
+    // AUTO ANCHOR (SWAP TO GLOWSTONE)
     // =========================
     private void handleAutoAnchor(MinecraftClient client) {
 
@@ -229,12 +191,17 @@ public class AnchorAssist implements ClientModInitializer {
 
         client.player.getInventory().selectedSlot = glowSlot;
 
-        client.interactionManager.interactBlock(client.player, Hand.MAIN_HAND, hit);
+        client.interactionManager.interactBlock(
+                client.player,
+                Hand.MAIN_HAND,
+                hit
+        );
+
         client.player.swingHand(Hand.MAIN_HAND);
     }
 
     // =========================
-    // ANCHOR SAFE
+    // ANCHOR SAFE (PERFECT SIDE + AUTO TOTEM)
     // =========================
     private void handleAnchorSafe(MinecraftClient mc) {
 
@@ -284,7 +251,7 @@ public class AnchorAssist implements ClientModInitializer {
     }
 
     // =========================
-    // FAST TOTEM
+    // FAST TOTEM (NO AUTO CLOSE)
     // =========================
     private void handleFastTotem(MinecraftClient client) {
 
