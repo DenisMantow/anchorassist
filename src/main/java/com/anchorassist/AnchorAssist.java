@@ -7,13 +7,9 @@ import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
-import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.InventoryScreen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.DrawContext;
 
 import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.decoration.EndCrystalEntity;
@@ -33,6 +29,8 @@ import net.minecraft.screen.slot.SlotActionType;
 
 import org.lwjgl.glfw.GLFW;
 
+import java.util.concurrent.ThreadLocalRandom;
+
 import walksy.optimizer.CrystalOptimizer;
 
 public class AnchorAssist implements ClientModInitializer {
@@ -49,7 +47,20 @@ public class AnchorAssist implements ClientModInitializer {
     public static boolean crystalOptimizerEnabled = true;
 
     // =========================
-    // KEYBINDS (Denis MOD)
+    // FAST TOTEM SYSTEM
+    // =========================
+    private int fastTotemDelay = 0;
+    private int fastTotemStage = 0;
+    // 0 = idle
+    // 1 = slot7 sudah diisi
+    // 2 = offhand sudah diisi
+
+    private int getRandomDelay() {
+        return ThreadLocalRandom.current().nextInt(1, 4); // 1-3 tick
+    }
+
+    // =========================
+    // KEYBINDS
     // =========================
     private static KeyBinding toggleHitKey;
     private static KeyBinding toggleAnchorKey;
@@ -189,12 +200,11 @@ public class AnchorAssist implements ClientModInitializer {
         client.player.getInventory().selectedSlot = axeSlot;
         client.interactionManager.attackEntity(client.player, target);
         client.player.swingHand(Hand.MAIN_HAND);
-
         client.player.getInventory().selectedSlot = swordSlot;
     }
 
     // =========================
-    // AUTO ANCHOR (SWAP TO GLOWSTONE)
+    // AUTO ANCHOR
     // =========================
     private void handleAutoAnchor(MinecraftClient client) {
 
@@ -208,18 +218,12 @@ public class AnchorAssist implements ClientModInitializer {
         if (glowSlot == -1) return;
 
         client.player.getInventory().selectedSlot = glowSlot;
-
-        client.interactionManager.interactBlock(
-                client.player,
-                Hand.MAIN_HAND,
-                hit
-        );
-
+        client.interactionManager.interactBlock(client.player, Hand.MAIN_HAND, hit);
         client.player.swingHand(Hand.MAIN_HAND);
     }
 
     // =========================
-    // ANCHOR SAFE (PERFECT SIDE + AUTO TOTEM)
+    // ANCHOR SAFE
     // =========================
     private void handleAnchorSafe(MinecraftClient mc) {
 
@@ -263,18 +267,22 @@ public class AnchorAssist implements ClientModInitializer {
         mc.player.swingHand(Hand.MAIN_HAND);
 
         int totemSlot = findHotbarItem(Items.TOTEM_OF_UNDYING, mc);
-        if (totemSlot != -1) {
+        if (totemSlot != -1)
             mc.player.getInventory().selectedSlot = totemSlot;
-        }
     }
 
     // =========================
-    // FAST TOTEM (NO AUTO CLOSE)
+    // FAST TOTEM (RANDOM DELAY 1-3 TICK)
     // =========================
     private void handleFastTotem(MinecraftClient client) {
 
         if (!(client.currentScreen instanceof InventoryScreen)) return;
         if (client.player.currentScreenHandler == null) return;
+
+        if (fastTotemDelay > 0) {
+            fastTotemDelay--;
+            return;
+        }
 
         int syncId = client.player.currentScreenHandler.syncId;
         int totemSlot = -1;
@@ -287,12 +295,21 @@ public class AnchorAssist implements ClientModInitializer {
             }
         }
 
-        if (totemSlot == -1) return;
+        if (totemSlot == -1) {
+            fastTotemStage = 0;
+            return;
+        }
 
         int slot7Container = 36 + 7;
         int offhandContainer = 45;
 
-        if (client.player.currentScreenHandler.getSlot(slot7Container).getStack().isEmpty()) {
+        boolean slot7Empty = client.player.currentScreenHandler
+                .getSlot(slot7Container).getStack().isEmpty();
+
+        boolean offhandEmpty = client.player.currentScreenHandler
+                .getSlot(offhandContainer).getStack().isEmpty();
+
+        if (slot7Empty && fastTotemStage == 0) {
 
             client.interactionManager.clickSlot(
                     syncId,
@@ -301,10 +318,13 @@ public class AnchorAssist implements ClientModInitializer {
                     SlotActionType.SWAP,
                     client.player
             );
+
+            fastTotemStage = 1;
+            fastTotemDelay = getRandomDelay();
             return;
         }
 
-        if (client.player.currentScreenHandler.getSlot(offhandContainer).getStack().isEmpty()) {
+        if (offhandEmpty && fastTotemStage == 1) {
 
             client.interactionManager.clickSlot(
                     syncId,
@@ -313,6 +333,14 @@ public class AnchorAssist implements ClientModInitializer {
                     SlotActionType.SWAP,
                     client.player
             );
+
+            fastTotemStage = 2;
+            fastTotemDelay = getRandomDelay();
+            return;
+        }
+
+        if (!slot7Empty && !offhandEmpty) {
+            fastTotemStage = 0;
         }
     }
 
