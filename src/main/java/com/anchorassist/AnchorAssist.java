@@ -96,7 +96,7 @@ public class AnchorAssist implements ClientModInitializer {
                         name,
                         InputUtil.Type.KEYSYM,
                         key,
-                        "Denis MOD"
+                        "BNDTxDen MOD"
                 )
         );
     }
