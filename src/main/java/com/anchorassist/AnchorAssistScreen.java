@@ -9,65 +9,69 @@ import net.minecraft.util.Formatting;
 public class AnchorAssistScreen extends Screen {
 
     protected AnchorAssistScreen() {
-        super(Text.literal("Anchor Assist Settings"));
+        super(Text.literal("Denis MOD"));
     }
 
     @Override
     protected void init() {
 
         int centerX = this.width / 2;
-        int startY = 80;
+        int leftX = centerX - 110;
+        int rightX = centerX + 10;
 
-        int buttonWidth = 200;
-        int buttonHeight = 20;
+        int startY = 80;
         int spacing = 24;
 
-        int y = startY;
+        int buttonWidth = 100;
+        int buttonHeight = 20;
+
+        int leftY = startY;
+        int rightY = startY;
 
         // =========================
-        // CORE FEATURES
+        // LEFT COLUMN (4)
         // =========================
 
-        addToggle(centerX, y, buttonWidth, buttonHeight,
-                "Auto Hit",
+        addToggle(leftX, leftY, buttonWidth, buttonHeight,
+                "Auto HIT",
                 () -> AnchorAssist.autoHitEnabled,
                 v -> AnchorAssist.autoHitEnabled = v);
-        y += spacing;
+        leftY += spacing;
 
-        addToggle(centerX, y, buttonWidth, buttonHeight,
-                "Auto Anchor",
+        addToggle(leftX, leftY, buttonWidth, buttonHeight,
+                "Anchor Charge",
                 () -> AnchorAssist.autoAnchorEnabled,
                 v -> AnchorAssist.autoAnchorEnabled = v);
-        y += spacing;
+        leftY += spacing;
 
-        addToggle(centerX, y, buttonWidth, buttonHeight,
+        addToggle(leftX, leftY, buttonWidth, buttonHeight,
                 "Anchor Safe",
                 () -> AnchorAssist.anchorSafeEnabled,
                 v -> AnchorAssist.anchorSafeEnabled = v);
-        y += spacing;
+        leftY += spacing;
 
-        addToggle(centerX, y, buttonWidth, buttonHeight,
+        addToggle(leftX, leftY, buttonWidth, buttonHeight,
                 "Fast Totem",
                 () -> AnchorAssist.fastTotemEnabled,
                 v -> AnchorAssist.fastTotemEnabled = v);
-        y += spacing;
 
         // =========================
-        // PVP FEATURES
+        // RIGHT COLUMN (3)
         // =========================
 
-        addToggle(centerX, y, buttonWidth, buttonHeight,
-                "Auto Shield Break",
+        addToggle(rightX, rightY, buttonWidth, buttonHeight,
+                "Break Shield",
                 () -> AnchorAssist.autoShieldBreakEnabled,
                 v -> AnchorAssist.autoShieldBreakEnabled = v);
-        y += spacing;
+        rightY += spacing;
 
-        addToggle(centerX, y, buttonWidth, buttonHeight,
-                "Smart Crystal Break",
+        addToggle(rightX, rightY, buttonWidth, buttonHeight,
+                "Crystal Break",
                 () -> AnchorAssist.smartCrystalBreakEnabled,
                 v -> AnchorAssist.smartCrystalBreakEnabled = v);
+        rightY += spacing;
 
-        addToggle(centerX, y, buttonWidth, buttonHeight,
+        addToggle(rightX, rightY, buttonWidth, buttonHeight,
                 "Crystal Optimizer",
                 () -> walksy.optimizer.CrystalOptimizer.enabled,
                 v -> walksy.optimizer.CrystalOptimizer.enabled = v);
@@ -76,7 +80,7 @@ public class AnchorAssistScreen extends Screen {
     // =========================
     // TOGGLE BUILDER
     // =========================
-    private void addToggle(int centerX, int y, int width, int height,
+    private void addToggle(int x, int y, int width, int height,
                            String name,
                            java.util.function.Supplier<Boolean> getter,
                            java.util.function.Consumer<Boolean> setter) {
@@ -88,14 +92,11 @@ public class AnchorAssistScreen extends Screen {
                     setter.accept(newValue);
                     button.setMessage(getToggleText(name, newValue));
                 })
-                .dimensions(centerX - width / 2, y, width, height)
+                .dimensions(x, y, width, height)
                 .build()
         );
     }
 
-    // =========================
-    // MODERN ON/OFF STYLE
-    // =========================
     private Text getToggleText(String name, boolean enabled) {
         return Text.literal(name + ": ")
                 .append(enabled
@@ -117,7 +118,7 @@ public class AnchorAssistScreen extends Screen {
 
         context.drawCenteredTextWithShadow(
                 this.textRenderer,
-                Text.literal("Anchor Assist PvP Module")
+                Text.literal("Denis MOD - PvP Module")
                         .formatted(Formatting.AQUA, Formatting.BOLD),
                 centerX,
                 35,
@@ -126,7 +127,7 @@ public class AnchorAssistScreen extends Screen {
 
         context.drawCenteredTextWithShadow(
                 this.textRenderer,
-                Text.literal("R=Hit | G=Anchor | Y=Safe | T=Totem | Z=Shield | X=Crystal | Shift=GUI")
+                Text.literal("Manual Keybind Config in Minecraft Settings")
                         .formatted(Formatting.GRAY),
                 centerX,
                 50,
