@@ -127,7 +127,7 @@ public class AnchorAssist implements ClientModInitializer {
         }
 
         while (openGuiKey.wasPressed())
-            client.setScreen(new DenisScreen());
+            client.setScreen(new AnchorAssistScreen());
     }
 
     private boolean toggle(MinecraftClient client, boolean value, String name) {
