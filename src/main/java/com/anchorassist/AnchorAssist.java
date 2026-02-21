@@ -138,9 +138,10 @@ public class AnchorAssist implements ClientModInitializer {
     }
 
     // =========================
-    // FEATURES (SAMA SEMUA)
+    // AUTO HIT
     // =========================
     private void handleAutoHit(MinecraftClient client) {
+
         if (client.crosshairTarget instanceof EntityHitResult hit &&
                 hit.getEntity() instanceof PlayerEntity target) {
 
@@ -153,7 +154,11 @@ public class AnchorAssist implements ClientModInitializer {
         }
     }
 
+    // =========================
+    // SMART CRYSTAL BREAK
+    // =========================
     private void handleSmartCrystalBreak(MinecraftClient client) {
+
         if (!(client.crosshairTarget instanceof EntityHitResult hit)) return;
         if (!(hit.getEntity() instanceof EndCrystalEntity crystal)) return;
 
@@ -165,7 +170,11 @@ public class AnchorAssist implements ClientModInitializer {
         }
     }
 
+    // =========================
+    // AUTO SHIELD BREAK
+    // =========================
     private void handleAutoShieldBreak(MinecraftClient client) {
+
         if (!(client.crosshairTarget instanceof EntityHitResult hit)) return;
         if (!(hit.getEntity() instanceof PlayerEntity target)) return;
         if (!target.isBlocking()) return;
@@ -178,10 +187,15 @@ public class AnchorAssist implements ClientModInitializer {
         client.player.getInventory().selectedSlot = axeSlot;
         client.interactionManager.attackEntity(client.player, target);
         client.player.swingHand(Hand.MAIN_HAND);
+
         client.player.getInventory().selectedSlot = swordSlot;
     }
 
+    // =========================
+    // AUTO ANCHOR (SWAP TO GLOWSTONE)
+    // =========================
     private void handleAutoAnchor(MinecraftClient client) {
+
         if (!(client.crosshairTarget instanceof BlockHitResult hit)) return;
 
         BlockState state = client.world.getBlockState(hit.getBlockPos());
@@ -192,14 +206,25 @@ public class AnchorAssist implements ClientModInitializer {
         if (glowSlot == -1) return;
 
         client.player.getInventory().selectedSlot = glowSlot;
-        client.interactionManager.interactBlock(client.player, Hand.MAIN_HAND, hit);
+
+        client.interactionManager.interactBlock(
+                client.player,
+                Hand.MAIN_HAND,
+                hit
+        );
+
         client.player.swingHand(Hand.MAIN_HAND);
     }
 
+    // =========================
+    // ANCHOR SAFE (PERFECT SIDE + AUTO TOTEM)
+    // =========================
     private void handleAnchorSafe(MinecraftClient mc) {
+
         if (!(mc.crosshairTarget instanceof BlockHitResult hit)) return;
 
         BlockPos anchorPos = hit.getBlockPos();
+
         if (!(mc.world.getBlockState(anchorPos).getBlock() instanceof RespawnAnchorBlock))
             return;
 
@@ -208,11 +233,42 @@ public class AnchorAssist implements ClientModInitializer {
 
         if (charges < 1) return;
 
+        Vec3d playerPos = mc.player.getPos();
+        Vec3d anchorCenter = Vec3d.ofCenter(anchorPos);
+
+        double dx = playerPos.x - anchorCenter.x;
+        double dz = playerPos.z - anchorCenter.z;
+
+        Direction placeDir = Direction.getFacing(dx, 0, dz);
+        if (placeDir.getAxis().isVertical()) return;
+
+        BlockPos safePos = anchorPos.offset(placeDir);
+
+        if (!mc.world.getBlockState(safePos).isAir()) return;
+        if (!mc.world.getBlockState(safePos.down()).isSolidBlock(mc.world, safePos.down())) return;
+
+        mc.interactionManager.interactBlock(
+                mc.player,
+                Hand.MAIN_HAND,
+                new BlockHitResult(
+                        Vec3d.ofCenter(safePos.down()),
+                        Direction.UP,
+                        safePos.down(),
+                        false
+                )
+        );
+
+        mc.player.swingHand(Hand.MAIN_HAND);
+
         int totemSlot = findHotbarItem(Items.TOTEM_OF_UNDYING, mc);
-        if (totemSlot != -1)
+        if (totemSlot != -1) {
             mc.player.getInventory().selectedSlot = totemSlot;
+        }
     }
 
+    // =========================
+    // FAST TOTEM (NO AUTO CLOSE)
+    // =========================
     private void handleFastTotem(MinecraftClient client) {
 
         if (!(client.currentScreen instanceof InventoryScreen)) return;
@@ -231,10 +287,22 @@ public class AnchorAssist implements ClientModInitializer {
 
         if (totemSlot == -1) return;
 
+        int slot7Container = 36 + 7;
         int offhandContainer = 45;
 
-        if (client.player.currentScreenHandler.getSlot(offhandContainer)
-                .getStack().isEmpty()) {
+        if (client.player.currentScreenHandler.getSlot(slot7Container).getStack().isEmpty()) {
+
+            client.interactionManager.clickSlot(
+                    syncId,
+                    totemSlot,
+                    7,
+                    SlotActionType.SWAP,
+                    client.player
+            );
+            return;
+        }
+
+        if (client.player.currentScreenHandler.getSlot(offhandContainer).getStack().isEmpty()) {
 
             client.interactionManager.clickSlot(
                     syncId,
