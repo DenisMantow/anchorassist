@@ -387,5 +387,16 @@ public class AnchorAssist implements ClientModInitializer {
 
         fastTotemDelay = getRandomDelay();
     }
-}
-}
+    
+    // =========================
+    // HOTBAR FINDER
+    // =========================
+    private int findHotbarItem(net.minecraft.item.Item item, MinecraftClient client) {
+        for (int i = 0; i < 9; i++) {
+            if (client.player.getInventory().getStack(i).getItem() == item) {
+                return i;
+            }
+        }
+        return -1;
+    }
+    }
