@@ -388,3 +388,4 @@ public class AnchorAssist implements ClientModInitializer {
         fastTotemDelay = getRandomDelay();
     }
 }
+}
