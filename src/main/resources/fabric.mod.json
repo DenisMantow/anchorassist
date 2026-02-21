@@ -1,11 +1,12 @@
 {
   "schemaVersion": 1,
   "id": "anchorassist",
-  "version": "1.0.0",
-  "name": "AnchorAssist",
-  "description": "Anchor auto glowstone & crosshair hit assist",
-  "authors": ["You"],
+  "version": "v2.1",
+  "name": "Denis Crystal PVP MOD",
+  "description": "Competitive Crystal PvP Enhancement Client-Side Module built for High-Level Gameplay.",
+  "authors": ["Denis as BNDTxDen"],
   "license": "MIT",
+  "icon": "assets/anchorassist/icon.png",
   "environment": "client",
   "entrypoints": {
     "client": ["com.anchorassist.AnchorAssist"]
