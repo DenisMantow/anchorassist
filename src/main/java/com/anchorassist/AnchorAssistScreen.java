@@ -18,7 +18,7 @@ public class AnchorAssistScreen extends Screen {
         int centerX = this.width / 2;
         int startY = 80;
 
-        int buttonWidth = 220;   // ⬅ diperbesar
+        int buttonWidth = 150;   // ⬅ diperbesar
         int buttonHeight = 20;
         int spacing = 24;
 
