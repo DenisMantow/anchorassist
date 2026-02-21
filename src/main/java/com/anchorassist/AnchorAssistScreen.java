@@ -16,69 +16,63 @@ public class AnchorAssistScreen extends Screen {
     protected void init() {
 
         int centerX = this.width / 2;
-        int startY = 70;
+        int startY = 95;
 
-        int buttonWidth = 220;
+        int buttonWidth = 170;
         int buttonHeight = 20;
-        int spacing = 24;
+        int spacing = 26;
 
-        int y = startY;
+        int leftX = centerX - 190;
+        int rightX = centerX + 20;
 
         // =========================
-        // CORE FEATURES
+        // LEFT SIDE (4)
         // =========================
 
-        addToggle(centerX, y, buttonWidth, buttonHeight,
+        addToggle(leftX, startY + spacing * 0, buttonWidth, buttonHeight,
                 "Auto Hit",
                 () -> AnchorAssist.autoHitEnabled,
                 v -> AnchorAssist.autoHitEnabled = v);
-        y += spacing;
 
-        addToggle(centerX, y, buttonWidth, buttonHeight,
+        addToggle(leftX, startY + spacing * 1, buttonWidth, buttonHeight,
                 "Auto Anchor",
                 () -> AnchorAssist.autoAnchorEnabled,
                 v -> AnchorAssist.autoAnchorEnabled = v);
-        y += spacing;
 
-        addToggle(centerX, y, buttonWidth, buttonHeight,
+        addToggle(leftX, startY + spacing * 2, buttonWidth, buttonHeight,
                 "Anchor Safe",
                 () -> AnchorAssist.anchorSafeEnabled,
                 v -> AnchorAssist.anchorSafeEnabled = v);
-        y += spacing;
 
-        addToggle(centerX, y, buttonWidth, buttonHeight,
+        addToggle(leftX, startY + spacing * 3, buttonWidth, buttonHeight,
                 "Fast Totem",
                 () -> AnchorAssist.fastTotemEnabled,
                 v -> AnchorAssist.fastTotemEnabled = v);
-        y += spacing;
 
         // =========================
-        // PVP FEATURES
+        // RIGHT SIDE (3)
         // =========================
 
-        addToggle(centerX, y, buttonWidth, buttonHeight,
+        addToggle(rightX, startY + spacing * 0, buttonWidth, buttonHeight,
                 "Auto Shield Break",
                 () -> AnchorAssist.autoShieldBreakEnabled,
                 v -> AnchorAssist.autoShieldBreakEnabled = v);
-        y += spacing;
 
-        addToggle(centerX, y, buttonWidth, buttonHeight,
+        addToggle(rightX, startY + spacing * 1, buttonWidth, buttonHeight,
                 "Smart Crystal Break",
                 () -> AnchorAssist.smartCrystalBreakEnabled,
                 v -> AnchorAssist.smartCrystalBreakEnabled = v);
-        y += spacing;
 
-        addToggle(centerX, y, buttonWidth, buttonHeight,
+        addToggle(rightX, startY + spacing * 2, buttonWidth, buttonHeight,
                 "Crystal Optimizer v2",
                 () -> AnchorAssist.crystalOptimizerV2Enabled,
                 v -> AnchorAssist.crystalOptimizerV2Enabled = v);
-        y += spacing + 10;
     }
 
     // =========================
     // TOGGLE BUILDER
     // =========================
-    private void addToggle(int centerX, int y, int width, int height,
+    private void addToggle(int x, int y, int width, int height,
                            String name,
                            java.util.function.Supplier<Boolean> getter,
                            java.util.function.Consumer<Boolean> setter) {
@@ -90,13 +84,13 @@ public class AnchorAssistScreen extends Screen {
                     setter.accept(newValue);
                     button.setMessage(getToggleText(name, newValue));
                 })
-                .dimensions(centerX - width / 2, y, width, height)
+                .dimensions(x, y, width, height)
                 .build()
         );
     }
 
     // =========================
-    // MODERN ON/OFF STYLE
+    // ON/OFF STYLE
     // =========================
     private Text getToggleText(String name, boolean enabled) {
         return Text.literal(name + ": ")
@@ -131,7 +125,7 @@ public class AnchorAssistScreen extends Screen {
                 Text.literal("KEYBINDS")
                         .formatted(Formatting.YELLOW, Formatting.BOLD),
                 centerX,
-                45,
+                48,
                 0xFFFFFF
         );
 
@@ -140,16 +134,16 @@ public class AnchorAssistScreen extends Screen {
                 Text.literal("R = Hit | G = Anchor | Y = Safe | T = Totem")
                         .formatted(Formatting.GRAY),
                 centerX,
-                58,
+                62,
                 0xFFFFFF
         );
 
         context.drawCenteredTextWithShadow(
                 this.textRenderer,
-                Text.literal("Z = Shield | X = Crystal Break | C = Optimizer")
+                Text.literal("Z = Shield | X = Crystal Break | B = Optimizer")
                         .formatted(Formatting.GRAY),
                 centerX,
-                68,
+                72,
                 0xFFFFFF
         );
 
@@ -158,7 +152,7 @@ public class AnchorAssistScreen extends Screen {
                 Text.literal("Right Shift = Open GUI")
                         .formatted(Formatting.DARK_GRAY),
                 centerX,
-                78,
+                84,
                 0xFFFFFF
         );
     }
@@ -166,5 +160,7 @@ public class AnchorAssistScreen extends Screen {
     @Override
     public boolean shouldPause() {
         return false;
+    }
+}    return false;
     }
 }
