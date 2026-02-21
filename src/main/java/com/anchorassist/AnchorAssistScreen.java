@@ -9,77 +9,77 @@ import net.minecraft.util.Formatting;
 public class AnchorAssistScreen extends Screen {
 
     protected AnchorAssistScreen() {
-        super(Text.literal("Denis MOD"));
+        super(Text.literal("Anchor Assist Settings"));
     }
 
     @Override
     protected void init() {
 
         int centerX = this.width / 2;
-        int leftX = centerX - 110;
-        int rightX = centerX + 10;
-
         int startY = 80;
+
+        int buttonWidth = 220;   // ⬅ diperbesar
+        int buttonHeight = 20;
         int spacing = 24;
 
-        int buttonWidth = 100;
-        int buttonHeight = 20;
+        // ⬅⬅ Geser kiri
+        int leftX = centerX - 240;
 
-        int leftY = startY;
-        int rightY = startY;
+        // ➡➡ Geser kanan
+        int rightX = centerX + 20;
+
+        int yLeft = startY;
+        int yRight = startY;
 
         // =========================
-        // LEFT COLUMN (4)
+        // 4 KIRI
         // =========================
 
-        addToggle(leftX, leftY, buttonWidth, buttonHeight,
-                "Auto HIT",
+        addToggle(leftX, yLeft, buttonWidth, buttonHeight,
+                "Auto Hit",
                 () -> AnchorAssist.autoHitEnabled,
                 v -> AnchorAssist.autoHitEnabled = v);
-        leftY += spacing;
+        yLeft += spacing;
 
-        addToggle(leftX, leftY, buttonWidth, buttonHeight,
-                "Anchor Charge",
+        addToggle(leftX, yLeft, buttonWidth, buttonHeight,
+                "Auto Anchor",
                 () -> AnchorAssist.autoAnchorEnabled,
                 v -> AnchorAssist.autoAnchorEnabled = v);
-        leftY += spacing;
+        yLeft += spacing;
 
-        addToggle(leftX, leftY, buttonWidth, buttonHeight,
+        addToggle(leftX, yLeft, buttonWidth, buttonHeight,
                 "Anchor Safe",
                 () -> AnchorAssist.anchorSafeEnabled,
                 v -> AnchorAssist.anchorSafeEnabled = v);
-        leftY += spacing;
+        yLeft += spacing;
 
-        addToggle(leftX, leftY, buttonWidth, buttonHeight,
+        addToggle(leftX, yLeft, buttonWidth, buttonHeight,
                 "Fast Totem",
                 () -> AnchorAssist.fastTotemEnabled,
                 v -> AnchorAssist.fastTotemEnabled = v);
 
         // =========================
-        // RIGHT COLUMN (3)
+        // 3 KANAN
         // =========================
 
-        addToggle(rightX, rightY, buttonWidth, buttonHeight,
-                "Break Shield",
+        addToggle(rightX, yRight, buttonWidth, buttonHeight,
+                "Auto Shield Break",
                 () -> AnchorAssist.autoShieldBreakEnabled,
                 v -> AnchorAssist.autoShieldBreakEnabled = v);
-        rightY += spacing;
+        yRight += spacing;
 
-        addToggle(rightX, rightY, buttonWidth, buttonHeight,
-                "Crystal Break",
+        addToggle(rightX, yRight, buttonWidth, buttonHeight,
+                "Smart Crystal Break",
                 () -> AnchorAssist.smartCrystalBreakEnabled,
                 v -> AnchorAssist.smartCrystalBreakEnabled = v);
-        rightY += spacing;
+        yRight += spacing;
 
-        addToggle(rightX, rightY, buttonWidth, buttonHeight,
+        addToggle(rightX, yRight, buttonWidth, buttonHeight,
                 "Crystal Optimizer",
                 () -> walksy.optimizer.CrystalOptimizer.enabled,
                 v -> walksy.optimizer.CrystalOptimizer.enabled = v);
     }
 
-    // =========================
-    // TOGGLE BUILDER
-    // =========================
     private void addToggle(int x, int y, int width, int height,
                            String name,
                            java.util.function.Supplier<Boolean> getter,
@@ -105,9 +105,6 @@ public class AnchorAssistScreen extends Screen {
                 );
     }
 
-    // =========================
-    // RENDER
-    // =========================
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
 
