@@ -115,7 +115,7 @@ public class AnchorAssistScreen extends Screen {
 
         context.drawCenteredTextWithShadow(
                 this.textRenderer,
-                Text.literal("Denis MOD - PvP Module")
+                Text.literal("BNDTxDen MOD - Crystal PvP GUI")
                         .formatted(Formatting.AQUA, Formatting.BOLD),
                 centerX,
                 35,
@@ -124,7 +124,7 @@ public class AnchorAssistScreen extends Screen {
 
         context.drawCenteredTextWithShadow(
                 this.textRenderer,
-                Text.literal("Manual Keybind Config in Minecraft Settings")
+                Text.literal("Manual Toggle Config in Minecraft Settings")
                         .formatted(Formatting.GRAY),
                 centerX,
                 50,
