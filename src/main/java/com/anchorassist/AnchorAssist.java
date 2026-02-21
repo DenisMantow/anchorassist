@@ -29,6 +29,8 @@ import net.minecraft.screen.slot.SlotActionType;
 
 import org.lwjgl.glfw.GLFW;
 
+import walksy.optimizer.CrystalOptimizer;
+
 public class AnchorAssist implements ClientModInitializer {
 
     // =========================
@@ -52,6 +54,7 @@ public class AnchorAssist implements ClientModInitializer {
     private static KeyBinding openGuiKey;
     private static KeyBinding smartCrystalKey;
     private static KeyBinding autoShieldKey;
+    public static KeyBinding crystalOptimizerKey;
 
     @Override
     public void onInitializeClient() {
@@ -63,6 +66,14 @@ public class AnchorAssist implements ClientModInitializer {
         openGuiKey = register("opengui", GLFW.GLFW_KEY_RIGHT_SHIFT);
         smartCrystalKey = register("smartcrystal", GLFW.GLFW_KEY_X);
         autoShieldKey = register("autoshield", GLFW.GLFW_KEY_Z);
+        crystalOptimizerKey = KeyBindingHelper.registerKeyBinding(
+        new KeyBinding(
+                "key.anchorassist.crystal_optimizer",
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_C,
+                "category.anchorassist"
+        )
+);
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
 
@@ -76,8 +87,11 @@ public class AnchorAssist implements ClientModInitializer {
             if (fastTotemEnabled) handleFastTotem(client);
             if (smartCrystalBreakEnabled) handleSmartCrystalBreak(client);
             if (autoShieldBreakEnabled) handleAutoShieldBreak(client);
-        });
-    }
+});
+        
+        ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            CrystalOptimizer.onTick();
+});
 
     // =========================
     // KEY REGISTER
@@ -113,6 +127,10 @@ public class AnchorAssist implements ClientModInitializer {
 
         while (openGuiKey.wasPressed())
             client.setScreen(new AnchorAssistScreen());
+
+        while (crystalOptimizerKey.wasPressed()) {
+            CrystalOptimizer.enabled = !CrystalOptimizer.enabled;
+        }
     }
 
     private boolean toggle(MinecraftClient client, boolean value, String name) {
