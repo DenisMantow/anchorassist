@@ -23,7 +23,7 @@ public class AnchorAssistScreen extends Screen {
         int spacing = 24;
 
         // ⬅⬅ Geser kiri
-        int leftX = centerX - 240;
+        int leftX = centerX - 170;
 
         // ➡➡ Geser kanan
         int rightX = centerX + 20;
