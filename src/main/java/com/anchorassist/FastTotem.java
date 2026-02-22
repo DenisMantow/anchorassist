@@ -76,7 +76,7 @@ public class FastTotem {
         if (!fastTotemKey.wasPressed()) return;
         if (!(client.currentScreen instanceof HandledScreen<?> screen)) return;
 
-        Slot hovered = screen.getFocusedSlot();
+        Slot hovered = screen.focusedSlot;
         if (hovered == null) return;
         if (hovered.getStack().getItem() != Items.TOTEM_OF_UNDYING) return;
 
