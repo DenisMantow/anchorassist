@@ -27,7 +27,7 @@ public class FastTotem {
     public static KeyBinding fastTotemKey;
 
     // =========================
-    // STATE
+    // STATE MACHINE
     // =========================
     private enum State { IDLE, WAIT_FIRST, WAIT_SECOND }
     private static State state = State.IDLE;
@@ -40,12 +40,12 @@ public class FastTotem {
     private static final Random random = new Random();
 
     // =========================
-    // INIT
+    // INIT (PANGGIL DI AnchorAssist.onInitializeClient)
     // =========================
     public static void init() {
         fastTotemKey = KeyBindingHelper.registerKeyBinding(
                 new KeyBinding(
-                        "Click Fast Totem",
+                        "Fast Totem (Hover)",
                         GLFW.GLFW_KEY_UNKNOWN,
                         "BNDTxDen MOD"
                 )
@@ -70,18 +70,26 @@ public class FastTotem {
     }
 
     // =========================
-    // CLICK FAST TOTEM (HOVER + KEY)
+    // CLICK FAST TOTEM (HOVER + KEYBIND)
     // =========================
     private static void handleClickFastTotem(MinecraftClient client) {
         if (!AnchorAssist.clickFastTotemEnabled) return;
         if (!fastTotemKey.wasPressed()) return;
         if (!(client.currentScreen instanceof HandledScreen<?> screen)) return;
 
-        // 🔴 FIX: pakai Accessor
+        // 🔥 AMBIL SLOT DI BAWAH MOUSE (BENAR)
         HandledScreenAccessor accessor = (HandledScreenAccessor) screen;
-        Slot hovered = accessor.anchorassist$getFocusedSlot();
-        if (hovered == null) return;
 
+        double mouseX = client.mouse.getX()
+                * client.getWindow().getScaledWidth()
+                / client.getWindow().getWidth();
+
+        double mouseY = client.mouse.getY()
+                * client.getWindow().getScaledHeight()
+                / client.getWindow().getHeight();
+
+        Slot hovered = accessor.anchorassist$getSlotAt(mouseX, mouseY);
+        if (hovered == null) return;
         if (hovered.getStack().getItem() != Items.TOTEM_OF_UNDYING) return;
 
         int slot7 = 36 + 7;
@@ -115,11 +123,11 @@ public class FastTotem {
         delay = randomDelay();
         state = State.WAIT_FIRST;
 
-        client.player.sendMessage(Text.literal("Click Fast Totem"), true);
+        client.player.sendMessage(Text.literal("Fast Totem ✔"), true);
     }
 
     // =========================
-    // AUTO FAST TOTEM
+    // AUTO FAST TOTEM (RANDOM INVENTORY)
     // =========================
     private static void handleAutoFastTotem(MinecraftClient client) {
         if (!AnchorAssist.fastTotemEnabled) return;
@@ -157,10 +165,7 @@ public class FastTotem {
     // STATE PROCESS
     // =========================
     private static void processState(MinecraftClient client) {
-        if (delay > 0) {
-            delay--;
-            return;
-        }
+        if (delay-- > 0) return;
 
         int syncId = client.player.currentScreenHandler.syncId;
 
@@ -191,8 +196,11 @@ public class FastTotem {
         client.player.swingHand(Hand.MAIN_HAND);
     }
 
+    // =========================
+    // UTILS
+    // =========================
     private static int randomDelay() {
-        return 1 + random.nextInt(4);
+        return 1 + random.nextInt(3); // 1–3 tick
     }
 
     private static void reset() {
