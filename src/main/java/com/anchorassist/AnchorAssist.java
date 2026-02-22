@@ -57,8 +57,6 @@ public class AnchorAssist implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
 
-        FastTotem.init();
-
         toggleHitKey = register("Auto HIT", GLFW.GLFW_KEY_UNKNOWN);
         toggleAnchorKey = register("Anchor Charge", GLFW.GLFW_KEY_UNKNOWN);
         toggleTotemKey = register("Fast Totem", GLFW.GLFW_KEY_UNKNOWN);
