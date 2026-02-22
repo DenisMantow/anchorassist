@@ -88,7 +88,7 @@ public class FastTotem {
                 * client.getWindow().getScaledHeight()
                 / client.getWindow().getHeight();
 
-        Slot hovered = accessor.anchorassist$getSlotAt(mouseX, mouseY);
+        Slot hovered = accessor.invokeGetSlotAt(mouseX, mouseY);
         if (hovered == null) return;
         if (hovered.getStack().getItem() != Items.TOTEM_OF_UNDYING) return;
 
