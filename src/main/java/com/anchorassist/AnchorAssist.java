@@ -34,6 +34,7 @@ import org.lwjgl.glfw.GLFW;
 import java.util.concurrent.ThreadLocalRandom;
 
 import walksy.optimizer.CrystalOptimizer;
+import com.anchorassist.FastTotem;
 
 public class AnchorAssist implements ClientModInitializer {
 
