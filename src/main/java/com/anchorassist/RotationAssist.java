@@ -15,14 +15,22 @@ public class RotationAssist {
     public static boolean microSnapEnabled = true;
 
     // =========================
-    // SETTINGS (AMAN)
+    // ROTATION CLAMP (AMAN)
     // =========================
     public static float maxYawPerTick = 18.0f;
     public static float maxPitchPerTick = 12.0f;
 
-    public static float microSnapMax = 2.0f;
-    public static float microSnapChance = 0.7f; // 70%
-    public static int microSnapDelayMax = 3;
+    // =========================
+    // MICRO SNAP (DEMO / TERASA)
+    // =========================
+    public static float microSnapYawMin = 2.0f;
+    public static float microSnapYawMax = 3.0f;
+
+    public static float microSnapPitchMin = 1.5f;
+    public static float microSnapPitchMax = 2.5f;
+
+    public static float microSnapChance = 0.90f; // 90%
+    public static int microSnapDelayMax = 0;     // 0 tick (biar kerasa)
 
     // =========================
     private static int snapDelay = 0;
@@ -32,7 +40,7 @@ public class RotationAssist {
     // MAIN APPLY
     // =========================
     public static void apply(MinecraftClient mc, Vec3d target) {
-        if (!enabled || mc.player == null) return;
+        if (!enabled || mc.player == null || target == null) return;
 
         float[] targetRot = getRotations(mc, target);
 
@@ -49,10 +57,12 @@ public class RotationAssist {
         float pitchChange = clamp(pitchDiff, maxPitchPerTick);
 
         mc.player.setYaw(yaw + yawChange);
-        mc.player.setPitch(MathHelper.clamp(pitch + pitchChange, -90f, 90f));
+        mc.player.setPitch(
+                MathHelper.clamp(pitch + pitchChange, -90f, 90f)
+        );
 
         // =========================
-        // MICRO SNAP
+        // MICRO SNAP (TERASA & MASUK AKAL)
         // =========================
         if (!microSnapEnabled) return;
 
@@ -63,14 +73,17 @@ public class RotationAssist {
 
         if (random.nextFloat() > microSnapChance) return;
 
-        float snapYaw = clamp(
-                randomRange(-microSnapMax, microSnapMax),
-                microSnapMax
+        // Snap ke arah target (bukan acak)
+        float snapYaw = MathHelper.clamp(
+                yawDiff * randomRange(0.6f, 1.0f),
+                -randomRange(microSnapYawMin, microSnapYawMax),
+                 randomRange(microSnapYawMin, microSnapYawMax)
         );
 
-        float snapPitch = clamp(
-                randomRange(-microSnapMax, microSnapMax),
-                microSnapMax
+        float snapPitch = MathHelper.clamp(
+                pitchDiff * randomRange(0.6f, 1.0f),
+                -randomRange(microSnapPitchMin, microSnapPitchMax),
+                 randomRange(microSnapPitchMin, microSnapPitchMax)
         );
 
         mc.player.setYaw(mc.player.getYaw() + snapYaw);
@@ -78,7 +91,9 @@ public class RotationAssist {
                 MathHelper.clamp(mc.player.getPitch() + snapPitch, -90f, 90f)
         );
 
-        snapDelay = random.nextInt(microSnapDelayMax + 1);
+        snapDelay = (microSnapDelayMax == 0)
+                ? 0
+                : random.nextInt(microSnapDelayMax + 1);
     }
 
     // =========================
@@ -98,8 +113,8 @@ public class RotationAssist {
 
         double distXZ = Math.sqrt(diff.x * diff.x + diff.z * diff.z);
 
-        float yaw = (float)(Math.toDegrees(Math.atan2(diff.z, diff.x)) - 90f);
-        float pitch = (float)(-Math.toDegrees(Math.atan2(diff.y, distXZ)));
+        float yaw = (float) (Math.toDegrees(Math.atan2(diff.z, diff.x)) - 90f);
+        float pitch = (float) (-Math.toDegrees(Math.atan2(diff.y, distXZ)));
 
         return new float[]{yaw, pitch};
     }
