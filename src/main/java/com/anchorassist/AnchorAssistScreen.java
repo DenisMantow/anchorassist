@@ -18,21 +18,21 @@ public class AnchorAssistScreen extends Screen {
         int centerX = this.width / 2;
         int startY = 80;
 
-        int buttonWidth = 150;   // ⬅ diperbesar
+        int buttonWidth = 150;
         int buttonHeight = 20;
         int spacing = 24;
 
-        // ⬅⬅ Geser kiri
+        // ⬅ KIRI
         int leftX = centerX - 170;
 
-        // ➡➡ Geser kanan
+        // ➡ KANAN
         int rightX = centerX + 20;
 
         int yLeft = startY;
         int yRight = startY;
 
         // =========================
-        // 4 KIRI
+        // KIRI
         // =========================
 
         addToggle(leftX, yLeft, buttonWidth, buttonHeight,
@@ -59,7 +59,7 @@ public class AnchorAssistScreen extends Screen {
                 v -> AnchorAssist.fastTotemEnabled = v);
 
         // =========================
-        // 3 KANAN
+        // KANAN
         // =========================
 
         addToggle(rightX, yRight, buttonWidth, buttonHeight,
@@ -78,8 +78,20 @@ public class AnchorAssistScreen extends Screen {
                 "Crystal Optimizer",
                 () -> walksy.optimizer.CrystalOptimizer.enabled,
                 v -> walksy.optimizer.CrystalOptimizer.enabled = v);
+        yRight += spacing;
+
+        // =========================
+        // ✅ CLICK FAST TOTEM (BARU)
+        // =========================
+        addToggle(rightX, yRight, buttonWidth, buttonHeight,
+                "Click Fast Totem",
+                () -> AnchorAssist.clickFastTotemEnabled,
+                v -> AnchorAssist.clickFastTotemEnabled = v);
     }
 
+    // =========================
+    // TOGGLE HELPER
+    // =========================
     private void addToggle(int x, int y, int width, int height,
                            String name,
                            java.util.function.Supplier<Boolean> getter,
