@@ -1,5 +1,7 @@
 package com.anchorassist;
 
+import com.anchorassist.mixin.HandledScreenAccessor;
+
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 
@@ -58,7 +60,6 @@ public class FastTotem {
     private static void onTick(MinecraftClient client) {
         if (client.player == null) return;
 
-        // STATE MACHINE
         if (state != State.IDLE) {
             processState(client);
             return;
@@ -76,8 +77,11 @@ public class FastTotem {
         if (!fastTotemKey.wasPressed()) return;
         if (!(client.currentScreen instanceof HandledScreen<?> screen)) return;
 
-        Slot hovered = screen.focusedSlot;
+        // 🔴 FIX: pakai Accessor
+        HandledScreenAccessor accessor = (HandledScreenAccessor) screen;
+        Slot hovered = accessor.anchorassist$getFocusedSlot();
         if (hovered == null) return;
+
         if (hovered.getStack().getItem() != Items.TOTEM_OF_UNDYING) return;
 
         int slot7 = 36 + 7;
