@@ -39,7 +39,7 @@ public class AnchorAssist implements ClientModInitializer {
     public static boolean anchorSafeEnabled = true;
     public static boolean smartCrystalBreakEnabled = true;
     public static boolean autoShieldBreakEnabled = true;
-    public static boolean fastTotemEnabled = true;
+    public static boolean clickfastTotemEnabled = true;
 
     // =========================
     // KEYBINDS
@@ -56,6 +56,8 @@ public class AnchorAssist implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+
+        FastTotem.init();
 
         toggleHitKey = register("Auto HIT", GLFW.GLFW_KEY_UNKNOWN);
         toggleAnchorKey = register("Anchor Charge", GLFW.GLFW_KEY_UNKNOWN);
