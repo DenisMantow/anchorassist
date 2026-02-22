@@ -39,6 +39,7 @@ public class AnchorAssist implements ClientModInitializer {
     public static boolean anchorSafeEnabled = true;
     public static boolean smartCrystalBreakEnabled = true;
     public static boolean autoShieldBreakEnabled = true;
+    public static boolean fastTotemEnabled = true;
 
     // =========================
     // KEYBINDS
@@ -51,6 +52,7 @@ public class AnchorAssist implements ClientModInitializer {
     private static KeyBinding smartCrystalKey;
     private static KeyBinding autoShieldKey;
     private static KeyBinding crystalOptimizerKey;
+    public static boolean clickFastTotemEnabled = true;
 
     @Override
     public void onInitializeClient() {
