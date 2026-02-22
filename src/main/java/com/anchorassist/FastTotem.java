@@ -123,7 +123,9 @@ public class FastTotem {
         delay = randomDelay();
         state = State.WAIT_FIRST;
 
-        client.player.sendMessage(Text.literal("Fast Totem ✔"), true);
+        client.player.sendMessage(Text.literal("KEY OK"), true);
+        client.player.sendMessage(Text.literal("HOVER=" + (hovered == null ? "NULL" : hovered.id)), true
+);
     }
 
     // =========================
