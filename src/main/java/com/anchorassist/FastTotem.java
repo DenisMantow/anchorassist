@@ -26,7 +26,7 @@ public class FastTotem {
     public static KeyBinding fastTotemKey;
 
     // ==================================================
-    // CLICK FAST TOTEM STATE
+    // CLICK STATE
     // ==================================================
     private enum ClickState {
         IDLE,
@@ -42,7 +42,7 @@ public class FastTotem {
     private static int secondTarget = -1;
 
     // ==================================================
-    // AUTO FAST TOTEM STATE
+    // AUTO STATE
     // ==================================================
     private static int autoDelay = 0;
     private static boolean autoSecondPending = false;
@@ -76,16 +76,22 @@ public class FastTotem {
     }
 
     // ==================================================
-    // CLICK FAST TOTEM
+    // CLICK FAST TOTEM (KEYBIND)
     // ==================================================
     private static void handleClickFastTotem(MinecraftClient client) {
         if (!AnchorAssist.clickFastTotemEnabled) return;
 
         if (clickState == ClickState.IDLE) {
+
             if (!fastTotemKey.wasPressed()) return;
             if (!(client.currentScreen instanceof HandledScreen<?> screen)) return;
 
-            Slot hovered = screen.getFocusedSlot();
+            // ✅ MC 1.20.1 SAFE WAY
+            Slot hovered = screen.getSlotAt(
+                    client.mouse.getX(),
+                    client.mouse.getY()
+            );
+
             if (hovered == null) return;
             if (hovered.getStack().getItem() != Items.TOTEM_OF_UNDYING) return;
 
@@ -145,12 +151,12 @@ public class FastTotem {
     }
 
     // ==================================================
-    // AUTO FAST TOTEM (INVENTORY ONLY)
+    // AUTO FAST TOTEM
     // ==================================================
     private static void handleAutoFastTotem(MinecraftClient client) {
         if (!AnchorAssist.fastTotemEnabled) return;
         if (!(client.currentScreen instanceof InventoryScreen)) return;
-        if (clickState != ClickState.IDLE) return; // anti conflict
+        if (clickState != ClickState.IDLE) return;
 
         if (autoDelay > 0) {
             autoDelay--;
@@ -231,7 +237,7 @@ public class FastTotem {
     // UTILS
     // ==================================================
     private static int randomDelay() {
-        return 1 + random.nextInt(4); // 1–4 tick
+        return 1 + random.nextInt(4);
     }
 
     private static void resetClick() {
