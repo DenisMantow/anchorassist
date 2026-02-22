@@ -11,24 +11,24 @@ public class RotationAssist {
     // =========================
     // TOGGLE
     // =========================
-    public static boolean enabled = false;         // Rotation Assist On/Off
-    public static boolean microSnapEnabled = true; // Micro Snap On/Off
+    public static boolean enabled = false;          // Rotation Assist
+    public static boolean microSnapEnabled = true;  // Micro Snap
 
     // =========================
-    // ROTATION CLAMP (AMAN)
+    // ROTATION CLAMP
     // =========================
     public static float maxYawPerTick = 18.0f;
     public static float maxPitchPerTick = 12.0f;
 
     // =========================
-    // MICRO SNAP (TERASA & MASUK AKAL)
+    // MICRO SNAP SETTINGS
     // =========================
     public static float microSnapYawMin = 4.0f;
     public static float microSnapYawMax = 4.0f;
     public static float microSnapPitchMin = 3.0f;
     public static float microSnapPitchMax = 5.0f;
-    public static float microSnapChance = 1.0f; // 90%
-    public static int microSnapDelayMax = 0;     // 0 tick
+    public static float microSnapChance = 1.0f;
+    public static int microSnapDelayMax = 0;
 
     // =========================
     // HUD STATUS
@@ -44,31 +44,34 @@ public class RotationAssist {
     private static final Random random = new Random();
 
     // =========================
-    // MAIN APPLY METHOD
+    // MAIN APPLY
     // =========================
     public static void apply(MinecraftClient mc, Vec3d target) {
-        if (!enabled || mc.player == null || target == null) return;
+
+        if (mc.player == null || target == null) return;
+        if (!enabled && !microSnapEnabled) return;
 
         float[] targetRot = getRotations(mc, target);
 
-        float yaw = mc.player.getYaw();
-        float pitch = mc.player.getPitch();
+        float currentYaw = mc.player.getYaw();
+        float currentPitch = mc.player.getPitch();
 
-        float yawDiff = MathHelper.wrapDegrees(targetRot[0] - yaw);
-        float pitchDiff = targetRot[1] - pitch;
+        float yawDiff = MathHelper.wrapDegrees(targetRot[0] - currentYaw);
+        float pitchDiff = targetRot[1] - currentPitch;
 
         // =========================
-        // ROTATION CLAMP
+        // ROTATION ASSIST
         // =========================
-        float yawChange = clamp(yawDiff, maxYawPerTick);
-        float pitchChange = clamp(pitchDiff, maxPitchPerTick);
+        if (enabled) {
+            float yawChange = MathHelper.clamp(yawDiff, -maxYawPerTick, maxYawPerTick);
+            float pitchChange = MathHelper.clamp(pitchDiff, -maxPitchPerTick, maxPitchPerTick);
 
-        mc.player.setYaw(yaw + yawChange);
-        mc.player.setPitch(MathHelper.clamp(pitch + pitchChange, -90f, 90f));
+            mc.player.setYaw(currentYaw + yawChange);
+            mc.player.setPitch(MathHelper.clamp(currentPitch + pitchChange, -90f, 90f));
 
-        // Set HUD status untuk rotation
-        isWorking = Math.abs(yawDiff) > 0.5f || Math.abs(pitchDiff) > 0.5f;
-        hudTimer = 10;
+            isWorking = true;
+            hudTimer = 10;
+        }
 
         // =========================
         // MICRO SNAP
@@ -82,33 +85,32 @@ public class RotationAssist {
 
         if (random.nextFloat() > microSnapChance) return;
 
-        // Micro snap relatif ke target (bukan acak total)
-        float snapYaw = MathHelper.clamp(
-                yawDiff * randomRange(0.6f, 1.0f),
-                -randomRange(microSnapYawMin, microSnapYawMax),
-                 randomRange(microSnapYawMin, microSnapYawMax)
-        );
+        // Recalculate diff setelah perubahan yaw
+        float newYawDiff = MathHelper.wrapDegrees(targetRot[0] - mc.player.getYaw());
+        float newPitchDiff = targetRot[1] - mc.player.getPitch();
 
-        float snapPitch = MathHelper.clamp(
-                pitchDiff * randomRange(0.6f, 1.0f),
-                -randomRange(microSnapPitchMin, microSnapPitchMax),
-                 randomRange(microSnapPitchMin, microSnapPitchMax)
-        );
+        float snapYaw = Math.signum(newYawDiff) *
+                randomRange(microSnapYawMin, microSnapYawMax);
+
+        float snapPitch = Math.signum(newPitchDiff) *
+                randomRange(microSnapPitchMin, microSnapPitchMax);
 
         mc.player.setYaw(mc.player.getYaw() + snapYaw);
-        mc.player.setPitch(MathHelper.clamp(mc.player.getPitch() + snapPitch, -90f, 90f));
+        mc.player.setPitch(MathHelper.clamp(
+                mc.player.getPitch() + snapPitch,
+                -90f, 90f
+        ));
 
-        // Set HUD status untuk micro snap
         microSnapTriggered = true;
-        hudTimer = 40;
+        hudTimer = 20;
 
-        snapDelay = (microSnapDelayMax == 0)
+        snapDelay = microSnapDelayMax == 0
                 ? 0
                 : random.nextInt(microSnapDelayMax + 1);
     }
 
     // =========================
-    // HUD TICK (RESET STATUS)
+    // HUD TICK
     // =========================
     public static void tickHUD() {
         if (hudTimer > 0) {
@@ -122,10 +124,6 @@ public class RotationAssist {
     // =========================
     // UTILS
     // =========================
-    private static float clamp(float value, float max) {
-        return MathHelper.clamp(value, -max, max);
-    }
-
     private static float randomRange(float min, float max) {
         return min + random.nextFloat() * (max - min);
     }
