@@ -21,195 +21,138 @@ import java.util.*;
 
 public class FastTotem {
 
-    // =========================
-    // KEYBIND
-    // =========================
-    public static KeyBinding fastTotemKey;
+// =========================
+// FAST TOTEM (RANDOM DELAY 1-3 TICK)
+// =========================
+private void handleFastTotem(MinecraftClient client) {
 
-    // =========================
-    // STATE MACHINE
-    // =========================
-    private enum State { IDLE, WAIT_FIRST, WAIT_SECOND }
-    private static State state = State.IDLE;
+if (!(client.currentScreen instanceof InventoryScreen)) return;
+if (client.player.currentScreenHandler == null) return;
 
-    private static int delay = 0;
-    private static int sourceSlot = -1;
-    private static int firstTarget = -1;
-    private static int secondTarget = -1;
+if (fastTotemDelay > 0) {
+fastTotemDelay--;
+return;
+}
 
-    private static final Random random = new Random();
+int syncId = client.player.currentScreenHandler.syncId;
 
-    // =========================
-    // INIT (PANGGIL DI AnchorAssist.onInitializeClient)
-    // =========================
-    public static void init() {
-        fastTotemKey = KeyBindingHelper.registerKeyBinding(
-                new KeyBinding(
-                        "Fast Totem (Hover)",
-                        GLFW.GLFW_KEY_UNKNOWN,
-                        "BNDTxDen MOD"
-                )
-        );
+// =========================
+// Cari semua slot inventory yang berisi totem
+// =========================
+java.util.List<Integer> totemSlots = new java.util.ArrayList<>();
 
-        ClientTickEvents.END_CLIENT_TICK.register(FastTotem::onTick);
-    }
+for (int i = 9; i <= 35; i++) {
+if (client.player.currentScreenHandler.getSlot(i).getStack().getItem()
+== Items.TOTEM_OF_UNDYING) {
+totemSlots.add(i);
+}
+}
 
-    // =========================
-    // MAIN TICK
-    // =========================
-    private static void onTick(MinecraftClient client) {
-        if (client.player == null) return;
+if (totemSlots.isEmpty()) {
+fastTotemStage = 0;
+return;
+}
 
-        if (state != State.IDLE) {
-            processState(client);
-            return;
-        }
+int slot7Container = 36 + 7;
+int offhandContainer = 45;
 
-        handleClickFastTotem(client);
-        handleAutoFastTotem(client);
-    }
+boolean slot7Empty = client.player.currentScreenHandler
+.getSlot(slot7Container).getStack().isEmpty();
 
-    // =========================
-    // CLICK FAST TOTEM (HOVER + KEYBIND)
-    // =========================
-    private static void handleClickFastTotem(MinecraftClient client) {
-        if (!AnchorAssist.clickFastTotemEnabled) return;
-        if (!fastTotemKey.wasPressed()) return;
-        if (!(client.currentScreen instanceof HandledScreen<?> screen)) return;
+boolean offhandEmpty = client.player.currentScreenHandler
+.getSlot(offhandContainer).getStack().isEmpty();
 
-        // 🔥 AMBIL SLOT DI BAWAH MOUSE (BENAR)
-        HandledScreenAccessor accessor = (HandledScreenAccessor) screen;
+// Kalau dua-duanya sudah ada totem → reset
+if (!slot7Empty && !offhandEmpty) {
+fastTotemStage = 0;
+return;
+}
 
-        double mouseX = client.mouse.getX()
-                * client.getWindow().getScaledWidth()
-                / client.getWindow().getWidth();
+// Ambil slot totem random
+int randomIndex = ThreadLocalRandom.current().nextInt(totemSlots.size());
+int randomTotemSlot = totemSlots.get(randomIndex);
 
-        double mouseY = client.mouse.getY()
-                * client.getWindow().getScaledHeight()
-                / client.getWindow().getHeight();
+// =========================
+// Isi salah satu dulu
+// =========================
+if (slot7Empty && offhandEmpty) {
 
-        Slot hovered = accessor.invokeGetSlotAt(mouseX, mouseY);
-        if (hovered == null) return;
-        if (hovered.getStack().getItem() != Items.TOTEM_OF_UNDYING) return;
+// Random pilih mana dulu    
+if (ThreadLocalRandom.current().nextBoolean()) {    
 
-        int slot7 = 36 + 7;
-        int offhand = 45;
+    // Slot 7 dulu    
+    client.interactionManager.clickSlot(    
+            syncId,    
+            randomTotemSlot,    
+            7,    
+            SlotActionType.SWAP,    
+            client.player    
+    );    
 
-        boolean slot7Empty = client.player.currentScreenHandler
-                .getSlot(slot7).getStack().isEmpty();
-        boolean offhandEmpty = client.player.currentScreenHandler
-                .getSlot(offhand).getStack().isEmpty();
+    fastTotemStage = 1;    
+} else {    
 
-        if (!slot7Empty && !offhandEmpty) return;
+    // Offhand dulu    
+    client.interactionManager.clickSlot(    
+            syncId,    
+            randomTotemSlot,    
+            40,    
+            SlotActionType.SWAP,    
+            client.player    
+    );    
 
-        sourceSlot = hovered.id;
+    fastTotemStage = 2;    
+}    
 
-        if (slot7Empty && offhandEmpty) {
-            if (random.nextBoolean()) {
-                firstTarget = slot7;
-                secondTarget = offhand;
-            } else {
-                firstTarget = offhand;
-                secondTarget = slot7;
-            }
-        } else if (slot7Empty) {
-            firstTarget = slot7;
-            secondTarget = -1;
-        } else {
-            firstTarget = offhand;
-            secondTarget = -1;
-        }
+fastTotemDelay = getRandomDelay();    
+return;
 
-        delay = randomDelay();
-        state = State.WAIT_FIRST;
+}
 
-        client.player.sendMessage(Text.literal("KEY OK"), true);
-        client.player.sendMessage(Text.literal("HOVER=" + (hovered == null ? "NULL" : hovered.id)), true
-);
-    }
+// =========================
+// Jika salah satu kosong
+// =========================
+if (slot7Empty) {
 
-    // =========================
-    // AUTO FAST TOTEM (RANDOM INVENTORY)
-    // =========================
-    private static void handleAutoFastTotem(MinecraftClient client) {
-        if (!AnchorAssist.fastTotemEnabled) return;
-        if (!(client.currentScreen instanceof InventoryScreen)) return;
+client.interactionManager.clickSlot(    
+        syncId,    
+        randomTotemSlot,    
+        7,    
+        SlotActionType.SWAP,    
+        client.player    
+);    
 
-        int slot7 = 36 + 7;
-        int offhand = 45;
+fastTotemDelay = getRandomDelay();    
+return;
 
-        boolean slot7Empty = client.player.currentScreenHandler
-                .getSlot(slot7).getStack().isEmpty();
-        boolean offhandEmpty = client.player.currentScreenHandler
-                .getSlot(offhand).getStack().isEmpty();
+}
 
-        if (!slot7Empty && !offhandEmpty) return;
+if (offhandEmpty) {
 
-        List<Integer> totems = new ArrayList<>();
-        for (int i = 9; i <= 35; i++) {
-            if (client.player.currentScreenHandler
-                    .getSlot(i).getStack().getItem() == Items.TOTEM_OF_UNDYING) {
-                totems.add(i);
-            }
-        }
+client.interactionManager.clickSlot(    
+        syncId,    
+        randomTotemSlot,    
+        40,    
+        SlotActionType.SWAP,    
+        client.player    
+);    
 
-        if (totems.isEmpty()) return;
+fastTotemDelay = getRandomDelay();    
+return;
 
-        sourceSlot = totems.get(random.nextInt(totems.size()));
-        firstTarget = slot7Empty ? slot7 : offhand;
-        secondTarget = -1;
+}
 
-        delay = randomDelay();
-        state = State.WAIT_FIRST;
-    }
+}
 
-    // =========================
-    // STATE PROCESS
-    // =========================
-    private static void processState(MinecraftClient client) {
-        if (delay-- > 0) return;
-
-        int syncId = client.player.currentScreenHandler.syncId;
-
-        if (state == State.WAIT_FIRST) {
-            click(client, syncId, sourceSlot, firstTarget);
-            delay = randomDelay();
-            state = (secondTarget != -1) ? State.WAIT_SECOND : State.IDLE;
-            return;
-        }
-
-        if (state == State.WAIT_SECOND) {
-            click(client, syncId, sourceSlot, secondTarget);
-            reset();
-        }
-    }
-
-    // =========================
-    // CLICK SLOT
-    // =========================
-    private static void click(MinecraftClient client, int syncId, int from, int to) {
-        client.interactionManager.clickSlot(
-                syncId,
-                from,
-                to,
-                SlotActionType.SWAP,
-                client.player
-        );
-        client.player.swingHand(Hand.MAIN_HAND);
-    }
-
-    // =========================
-    // UTILS
-    // =========================
-    private static int randomDelay() {
-        return 1 + random.nextInt(3); // 1–3 tick
-    }
-
-    private static void reset() {
-        state = State.IDLE;
-        delay = 0;
-        sourceSlot = -1;
-        firstTarget = -1;
-        secondTarget = -1;
-    }
+// =========================
+// HOTBAR FINDER
+// =========================
+private int findHotbarItem(net.minecraft.item.Item item, MinecraftClient client) {
+for (int i = 0; i < 9; i++) {
+if (client.player.getInventory().getStack(i).getItem() == item) {
+return i;
+}
+}
+return -1;
+}
 }
