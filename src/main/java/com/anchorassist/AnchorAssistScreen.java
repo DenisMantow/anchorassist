@@ -1,5 +1,7 @@
 package com.anchorassist;
 
+import com.anchorassist.assist.RotationAssist;
+
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.DrawContext;
@@ -32,7 +34,7 @@ public class AnchorAssistScreen extends Screen {
         int yRight = startY;
 
         // =========================
-        // KIRI
+        // KIRI – CORE COMBAT
         // =========================
 
         addToggle(leftX, yLeft, buttonWidth, buttonHeight,
@@ -59,7 +61,7 @@ public class AnchorAssistScreen extends Screen {
                 v -> AnchorAssist.fastTotemEnabled = v);
 
         // =========================
-        // KANAN
+        // KANAN – ASSIST & OPTIMIZER
         // =========================
 
         addToggle(rightX, yRight, buttonWidth, buttonHeight,
@@ -81,12 +83,19 @@ public class AnchorAssistScreen extends Screen {
         yRight += spacing;
 
         // =========================
-        // ✅ CLICK FAST TOTEM (BARU)
+        // 🧭 ROTATION ASSIST (LEGIT)
         // =========================
+
         addToggle(rightX, yRight, buttonWidth, buttonHeight,
-                "Click Fast Totem",
-                () -> AnchorAssist.clickFastTotemEnabled,
-                v -> AnchorAssist.clickFastTotemEnabled = v);
+                "Rotation Assist",
+                () -> RotationAssist.enabled,
+                v -> RotationAssist.enabled = v);
+        yRight += spacing;
+
+        addToggle(rightX, yRight, buttonWidth, buttonHeight,
+                "Micro Snap",
+                () -> RotationAssist.microSnapEnabled,
+                v -> RotationAssist.microSnapEnabled = v);
     }
 
     // =========================
@@ -117,6 +126,9 @@ public class AnchorAssistScreen extends Screen {
                 );
     }
 
+    // =========================
+    // RENDER
+    // =========================
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
 
@@ -136,7 +148,7 @@ public class AnchorAssistScreen extends Screen {
 
         context.drawCenteredTextWithShadow(
                 this.textRenderer,
-                Text.literal("Manual Toggle Config in Minecraft Settings")
+                Text.literal("Legit Assist • Human-like • Safe")
                         .formatted(Formatting.GRAY),
                 centerX,
                 50,
