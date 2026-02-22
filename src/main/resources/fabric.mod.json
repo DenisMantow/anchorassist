@@ -15,10 +15,6 @@
     ]
   },
 
-  "mixins": [
-    "anchorassist.mixins.json"
-  ],
-
   "depends": {
     "fabricloader": ">=0.15.7",
     "minecraft": "1.20.1",
