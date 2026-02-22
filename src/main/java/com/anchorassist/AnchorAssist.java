@@ -87,6 +87,7 @@ public class AnchorAssist implements ClientModInitializer {
                     client.player.getRotationVec(1.0f).multiply(3)
             );
             RotationAssist.tickHUD();
+        });
 
         // HUD RENDER (FIXED)
         HudRenderCallback.EVENT.register((drawContext, tickDelta) -> {
