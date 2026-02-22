@@ -7,8 +7,6 @@ import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
-import net.minecraft.client.gui.screen.ingame.InventoryScreen;
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
 
 import net.minecraft.text.Text;
 
@@ -26,15 +24,9 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.block.RespawnAnchorBlock;
 import net.minecraft.block.BlockState;
 
-import net.minecraft.screen.slot.Slot;
-import net.minecraft.screen.slot.SlotActionType;
-
 import org.lwjgl.glfw.GLFW;
 
-import java.util.concurrent.ThreadLocalRandom;
-
 import walksy.optimizer.CrystalOptimizer;
-import com.anchorassist.FastTotem;
 
 public class AnchorAssist implements ClientModInitializer {
 
@@ -43,21 +35,10 @@ public class AnchorAssist implements ClientModInitializer {
     // =========================
     public static boolean autoHitEnabled = true;
     public static boolean autoAnchorEnabled = true;
-    public static boolean fastTotemEnabled = true;
+    public static boolean fastTotemEnabled = true; // DIPAKAI FastTotemHandler
     public static boolean anchorSafeEnabled = true;
     public static boolean smartCrystalBreakEnabled = true;
     public static boolean autoShieldBreakEnabled = true;
-    public static boolean crystalOptimizerEnabled = true;
-    public static boolean clickFastTotemEnabled = true;
-
-    // =========================
-    // FAST TOTEM SYSTEM
-    // =========================
-    private int fastTotemDelay = 0;
-
-    private int getRandomDelay() {
-        return ThreadLocalRandom.current().nextInt(1, 4); // 1–3 tick
-    }
 
     // =========================
     // KEYBINDS
@@ -70,7 +51,6 @@ public class AnchorAssist implements ClientModInitializer {
     private static KeyBinding smartCrystalKey;
     private static KeyBinding autoShieldKey;
     private static KeyBinding crystalOptimizerKey;
-    private static KeyBinding clickFastTotemToggleKey;
 
     @Override
     public void onInitializeClient() {
@@ -93,21 +73,27 @@ public class AnchorAssist implements ClientModInitializer {
             if (autoHitEnabled) handleAutoHit(client);
             if (autoAnchorEnabled) handleAutoAnchor(client);
             if (anchorSafeEnabled) handleAnchorSafe(client);
-            if (fastTotemEnabled) handleFastTotem(client);
             if (smartCrystalBreakEnabled) handleSmartCrystalBreak(client);
             if (autoShieldBreakEnabled) handleAutoShieldBreak(client);
 
-            if (CrystalOptimizer.enabled)
+            if (CrystalOptimizer.enabled) {
                 CrystalOptimizer.onTick();
+            }
         });
     }
 
+    // =========================
+    // KEYBIND REGISTER
+    // =========================
     private KeyBinding register(String name, int key) {
         return KeyBindingHelper.registerKeyBinding(
                 new KeyBinding(name, InputUtil.Type.KEYSYM, key, "BNDTxDen MOD")
         );
     }
 
+    // =========================
+    // TOGGLE HANDLER
+    // =========================
     private void handleToggles(MinecraftClient client) {
 
         while (toggleHitKey.wasPressed())
