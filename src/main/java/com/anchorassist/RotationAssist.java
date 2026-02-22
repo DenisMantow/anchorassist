@@ -23,11 +23,11 @@ public class RotationAssist {
     // =========================
     // MICRO SNAP (TERASA & MASUK AKAL)
     // =========================
-    public static float microSnapYawMin = 2.0f;
-    public static float microSnapYawMax = 3.0f;
-    public static float microSnapPitchMin = 1.5f;
-    public static float microSnapPitchMax = 2.5f;
-    public static float microSnapChance = 0.90f; // 90%
+    public static float microSnapYawMin = 4.0f;
+    public static float microSnapYawMax = 4.0f;
+    public static float microSnapPitchMin = 3.0f;
+    public static float microSnapPitchMax = 5.0f;
+    public static float microSnapChance = 1.0f; // 90%
     public static int microSnapDelayMax = 0;     // 0 tick
 
     // =========================
