@@ -21,12 +21,12 @@ import java.util.concurrent.ThreadLocalRandom;
 public class FastTotem {
 
     // ==================================================
-    // KEYBIND (CLICK FAST TOTEM)
+    // KEYBIND
     // ==================================================
     public static KeyBinding fastTotemKey;
 
     // ==================================================
-    // STATE MACHINE (CLICK FAST TOTEM)
+    // CLICK FAST TOTEM STATE
     // ==================================================
     private enum ClickState {
         IDLE,
@@ -35,17 +35,18 @@ public class FastTotem {
     }
 
     private static ClickState clickState = ClickState.IDLE;
-
     private static int clickDelay = 0;
+
     private static int sourceSlot = -1;
     private static int firstTarget = -1;
     private static int secondTarget = -1;
 
     // ==================================================
-    // AUTO FAST TOTEM (INVENTORY)
+    // AUTO FAST TOTEM STATE
     // ==================================================
     private static int autoDelay = 0;
-    private static int autoStage = 0;
+    private static boolean autoSecondPending = false;
+    private static int autoSecondTarget = -1;
 
     private static final Random random = new Random();
 
@@ -70,72 +71,59 @@ public class FastTotem {
     private static void onTick(MinecraftClient client) {
         if (client.player == null) return;
 
-        // ===============================
-        // FEATURE 1 — CLICK FAST TOTEM
-        // ===============================
-        if (clickState == ClickState.IDLE) {
-            handleClickFastTotem(client);
-        } else {
-            handleClickState(client);
-        }
-
-        // ===============================
-        // FEATURE 2 — AUTO FAST TOTEM
-        // ===============================
+        handleClickFastTotem(client);
         handleAutoFastTotem(client);
     }
 
     // ==================================================
-    // CLICK FAST TOTEM (KEYBIND)
+    // CLICK FAST TOTEM
     // ==================================================
     private static void handleClickFastTotem(MinecraftClient client) {
         if (!AnchorAssist.clickFastTotemEnabled) return;
-        if (!fastTotemKey.wasPressed()) return;
 
-        if (!(client.currentScreen instanceof HandledScreen<?> screen)) return;
+        if (clickState == ClickState.IDLE) {
+            if (!fastTotemKey.wasPressed()) return;
+            if (!(client.currentScreen instanceof HandledScreen<?> screen)) return;
 
-        Slot hovered = screen.getFocusedSlot();
-        if (hovered == null) return;
-        if (hovered.getStack().getItem() != Items.TOTEM_OF_UNDYING) return;
+            Slot hovered = screen.getFocusedSlot();
+            if (hovered == null) return;
+            if (hovered.getStack().getItem() != Items.TOTEM_OF_UNDYING) return;
 
-        int slot7 = 36 + 7;
-        int offhand = 45;
+            int slot7 = 36 + 7;
+            int offhand = 45;
 
-        boolean slot7Empty = client.player.currentScreenHandler
-                .getSlot(slot7).getStack().isEmpty();
-        boolean offhandEmpty = client.player.currentScreenHandler
-                .getSlot(offhand).getStack().isEmpty();
+            boolean slot7Empty = client.player.currentScreenHandler
+                    .getSlot(slot7).getStack().isEmpty();
+            boolean offhandEmpty = client.player.currentScreenHandler
+                    .getSlot(offhand).getStack().isEmpty();
 
-        if (!slot7Empty && !offhandEmpty) return;
+            if (!slot7Empty && !offhandEmpty) return;
 
-        sourceSlot = hovered.id;
+            sourceSlot = hovered.id;
 
-        if (slot7Empty && offhandEmpty) {
-            if (random.nextBoolean()) {
+            if (slot7Empty && offhandEmpty) {
+                if (random.nextBoolean()) {
+                    firstTarget = 7;
+                    secondTarget = 40;
+                } else {
+                    firstTarget = 40;
+                    secondTarget = 7;
+                }
+            } else if (slot7Empty) {
                 firstTarget = 7;
-                secondTarget = 40;
+                secondTarget = -1;
             } else {
                 firstTarget = 40;
-                secondTarget = 7;
+                secondTarget = -1;
             }
-        } else if (slot7Empty) {
-            firstTarget = 7;
-            secondTarget = -1;
-        } else {
-            firstTarget = 40;
-            secondTarget = -1;
+
+            clickDelay = randomDelay();
+            clickState = ClickState.WAIT_FIRST;
+
+            client.player.sendMessage(Text.literal("Click Fast Totem"), true);
+            return;
         }
 
-        clickDelay = randomDelay();
-        clickState = ClickState.WAIT_FIRST;
-
-        client.player.sendMessage(
-                Text.literal("Click Fast Totem"),
-                true
-        );
-    }
-
-    private static void handleClickState(MinecraftClient client) {
         if (clickDelay > 0) {
             clickDelay--;
             return;
@@ -157,12 +145,12 @@ public class FastTotem {
     }
 
     // ==================================================
-    // AUTO FAST TOTEM (INVENTORY)
+    // AUTO FAST TOTEM (INVENTORY ONLY)
     // ==================================================
     private static void handleAutoFastTotem(MinecraftClient client) {
         if (!AnchorAssist.fastTotemEnabled) return;
         if (!(client.currentScreen instanceof InventoryScreen)) return;
-        if (client.player.currentScreenHandler == null) return;
+        if (clickState != ClickState.IDLE) return; // anti conflict
 
         if (autoDelay > 0) {
             autoDelay--;
@@ -170,19 +158,6 @@ public class FastTotem {
         }
 
         int syncId = client.player.currentScreenHandler.syncId;
-
-        List<Integer> totemSlots = new ArrayList<>();
-        for (int i = 9; i <= 35; i++) {
-            if (client.player.currentScreenHandler.getSlot(i)
-                    .getStack().getItem() == Items.TOTEM_OF_UNDYING) {
-                totemSlots.add(i);
-            }
-        }
-
-        if (totemSlots.isEmpty()) {
-            autoStage = 0;
-            return;
-        }
 
         int slot7 = 36 + 7;
         int offhand = 45;
@@ -193,31 +168,47 @@ public class FastTotem {
                 .getSlot(offhand).getStack().isEmpty();
 
         if (!slot7Empty && !offhandEmpty) {
-            autoStage = 0;
+            autoSecondPending = false;
             return;
         }
 
-        int randomTotem = totemSlots.get(
-                ThreadLocalRandom.current().nextInt(totemSlots.size())
-        );
-
-        if (slot7Empty && offhandEmpty) {
-            if (ThreadLocalRandom.current().nextBoolean()) {
-                clickSlot(client, syncId, randomTotem, 7);
-                autoStage = 1;
-            } else {
-                clickSlot(client, syncId, randomTotem, 40);
-                autoStage = 2;
+        List<Integer> totems = new ArrayList<>();
+        for (int i = 9; i <= 35; i++) {
+            if (client.player.currentScreenHandler
+                    .getSlot(i).getStack().getItem() == Items.TOTEM_OF_UNDYING) {
+                totems.add(i);
             }
+        }
+
+        if (totems.isEmpty()) return;
+
+        int source = totems.get(ThreadLocalRandom.current().nextInt(totems.size()));
+
+        if (slot7Empty && offhandEmpty && !autoSecondPending) {
+            if (random.nextBoolean()) {
+                clickSlot(client, syncId, source, 7);
+                autoSecondTarget = 40;
+            } else {
+                clickSlot(client, syncId, source, 40);
+                autoSecondTarget = 7;
+            }
+            autoSecondPending = true;
+            autoDelay = randomDelay();
+            return;
+        }
+
+        if (autoSecondPending) {
+            clickSlot(client, syncId, source, autoSecondTarget);
+            autoSecondPending = false;
             autoDelay = randomDelay();
             return;
         }
 
         if (slot7Empty) {
-            clickSlot(client, syncId, randomTotem, 7);
+            clickSlot(client, syncId, source, 7);
             autoDelay = randomDelay();
         } else if (offhandEmpty) {
-            clickSlot(client, syncId, randomTotem, 40);
+            clickSlot(client, syncId, source, 40);
             autoDelay = randomDelay();
         }
     }
