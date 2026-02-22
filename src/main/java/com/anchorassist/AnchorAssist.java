@@ -48,6 +48,7 @@ public class AnchorAssist implements ClientModInitializer {
     public static boolean smartCrystalBreakEnabled = true;
     public static boolean autoShieldBreakEnabled = true;
     public static boolean crystalOptimizerEnabled = true;
+    public static boolean clickFastTotemEnabled = true;
 
     // =========================
     // FAST TOTEM SYSTEM
@@ -69,6 +70,7 @@ public class AnchorAssist implements ClientModInitializer {
     private static KeyBinding smartCrystalKey;
     private static KeyBinding autoShieldKey;
     private static KeyBinding crystalOptimizerKey;
+    private static KeyBinding clickFastTotemToggleKey;
 
     @Override
     public void onInitializeClient() {
