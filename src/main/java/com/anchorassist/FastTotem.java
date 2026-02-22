@@ -94,8 +94,10 @@ public class FastTotem {
     // KEY PRESS HANDLER
     // =========================
     private static void handleKeyPress(MinecraftClient client) {
+        if (!AnchorAssist.clickFastTotemEnabled) return;
+   
         if (!fastTotemKey.wasPressed()) return;
-
+        
         if (!(client.currentScreen instanceof HandledScreen<?> screen)) return;
 
         Slot hovered = screen.getFocusedSlot();
