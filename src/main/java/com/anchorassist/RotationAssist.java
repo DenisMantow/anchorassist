@@ -11,8 +11,8 @@ public class RotationAssist {
     // =========================
     // TOGGLE
     // =========================
-    public static boolean enabled = false;
-    public static boolean microSnapEnabled = true;
+    public static boolean enabled = false;         // Rotation Assist On/Off
+    public static boolean microSnapEnabled = true; // Micro Snap On/Off
 
     // =========================
     // ROTATION CLAMP (AMAN)
@@ -21,23 +21,30 @@ public class RotationAssist {
     public static float maxPitchPerTick = 12.0f;
 
     // =========================
-    // MICRO SNAP (DEMO / TERASA)
+    // MICRO SNAP (TERASA & MASUK AKAL)
     // =========================
     public static float microSnapYawMin = 2.0f;
     public static float microSnapYawMax = 3.0f;
-
     public static float microSnapPitchMin = 1.5f;
     public static float microSnapPitchMax = 2.5f;
-
     public static float microSnapChance = 0.90f; // 90%
-    public static int microSnapDelayMax = 0;     // 0 tick (biar kerasa)
+    public static int microSnapDelayMax = 0;     // 0 tick
 
+    // =========================
+    // HUD STATUS
+    // =========================
+    public static boolean isWorking = false;
+    public static boolean microSnapTriggered = false;
+    public static int hudTimer = 0;
+
+    // =========================
+    // INTERNAL
     // =========================
     private static int snapDelay = 0;
     private static final Random random = new Random();
 
     // =========================
-    // MAIN APPLY
+    // MAIN APPLY METHOD
     // =========================
     public static void apply(MinecraftClient mc, Vec3d target) {
         if (!enabled || mc.player == null || target == null) return;
@@ -57,12 +64,14 @@ public class RotationAssist {
         float pitchChange = clamp(pitchDiff, maxPitchPerTick);
 
         mc.player.setYaw(yaw + yawChange);
-        mc.player.setPitch(
-                MathHelper.clamp(pitch + pitchChange, -90f, 90f)
-        );
+        mc.player.setPitch(MathHelper.clamp(pitch + pitchChange, -90f, 90f));
+
+        // Set HUD status untuk rotation
+        isWorking = Math.abs(yawDiff) > 0.5f || Math.abs(pitchDiff) > 0.5f;
+        hudTimer = 10;
 
         // =========================
-        // MICRO SNAP (TERASA & MASUK AKAL)
+        // MICRO SNAP
         // =========================
         if (!microSnapEnabled) return;
 
@@ -73,7 +82,7 @@ public class RotationAssist {
 
         if (random.nextFloat() > microSnapChance) return;
 
-        // Snap ke arah target (bukan acak)
+        // Micro snap relatif ke target (bukan acak total)
         float snapYaw = MathHelper.clamp(
                 yawDiff * randomRange(0.6f, 1.0f),
                 -randomRange(microSnapYawMin, microSnapYawMax),
@@ -87,13 +96,27 @@ public class RotationAssist {
         );
 
         mc.player.setYaw(mc.player.getYaw() + snapYaw);
-        mc.player.setPitch(
-                MathHelper.clamp(mc.player.getPitch() + snapPitch, -90f, 90f)
-        );
+        mc.player.setPitch(MathHelper.clamp(mc.player.getPitch() + snapPitch, -90f, 90f));
+
+        // Set HUD status untuk micro snap
+        microSnapTriggered = true;
+        hudTimer = 10;
 
         snapDelay = (microSnapDelayMax == 0)
                 ? 0
                 : random.nextInt(microSnapDelayMax + 1);
+    }
+
+    // =========================
+    // HUD TICK (RESET STATUS)
+    // =========================
+    public static void tickHUD() {
+        if (hudTimer > 0) {
+            hudTimer--;
+        } else {
+            isWorking = false;
+            microSnapTriggered = false;
+        }
     }
 
     // =========================
