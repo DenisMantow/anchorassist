@@ -82,6 +82,7 @@ public class AnchorAssist implements ClientModInitializer {
 
             if (CrystalOptimizer.enabled) {
                 CrystalOptimizer.onTick();
+            RotationAssist.tickHUD();
             }
         });
     }
