@@ -16,7 +16,7 @@ import org.lwjgl.glfw.GLFW;
 
 import java.util.Random;
 
-public class FastTotemHandler {
+public class FastTotem {
 
     // =========================
     // KEYBIND
@@ -50,13 +50,13 @@ public class FastTotemHandler {
     public static void init() {
         fastTotemKey = KeyBindingHelper.registerKeyBinding(
                 new KeyBinding(
-                        "Fast Totem (Inventory)",
+                        "Click Fast Totem",
                         GLFW.GLFW_KEY_UNKNOWN,
                         "BNDTxDen MOD"
                 )
         );
 
-        ClientTickEvents.END_CLIENT_TICK.register(FastTotemHandler::onTick);
+        ClientTickEvents.END_CLIENT_TICK.register(FastTotem::onTick);
     }
 
     // =========================
