@@ -83,8 +83,10 @@ public class AnchorAssist implements ClientModInitializer {
 
             if (CrystalOptimizer.enabled) CrystalOptimizer.onTick();
 
+            Vec3d target = client.player.getPos().add(
+                    client.player.getRotationVec(1.0f).multiply(3)
+            );
             RotationAssist.tickHUD();
-        });
 
         // HUD RENDER (FIXED)
         HudRenderCallback.EVENT.register((drawContext, tickDelta) -> {
