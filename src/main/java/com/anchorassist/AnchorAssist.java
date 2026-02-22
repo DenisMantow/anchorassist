@@ -56,14 +56,10 @@ public class AnchorAssist implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
 
-        // =========================
         // INIT FAST TOTEM
-        // =========================
         FastTotem.init();
 
-        // =========================
         // REGISTER KEYBINDS
-        // =========================
         toggleHitKey = register("Auto HIT", GLFW.GLFW_KEY_UNKNOWN);
         toggleAnchorKey = register("Anchor Charge", GLFW.GLFW_KEY_UNKNOWN);
         toggleTotemKey = register("Fast Totem", GLFW.GLFW_KEY_UNKNOWN);
@@ -73,9 +69,7 @@ public class AnchorAssist implements ClientModInitializer {
         autoShieldKey = register("Break Shield", GLFW.GLFW_KEY_UNKNOWN);
         crystalOptimizerKey = register("Crystal Optimizer", GLFW.GLFW_KEY_UNKNOWN);
 
-        // =========================
-        // CLIENT TICK HANDLER
-        // =========================
+        // CLIENT TICK
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.player == null || client.world == null) return;
 
@@ -89,13 +83,10 @@ public class AnchorAssist implements ClientModInitializer {
 
             if (CrystalOptimizer.enabled) CrystalOptimizer.onTick();
 
-            // Update HUD info untuk Rotation Assist
             RotationAssist.tickHUD();
         });
 
-        // =========================
-        // HUD RENDER
-        // =========================
+        // HUD RENDER (FIXED)
         HudRenderCallback.EVENT.register((drawContext, tickDelta) -> {
             MinecraftClient mc = MinecraftClient.getInstance();
             if (mc.player == null) return;
@@ -104,7 +95,7 @@ public class AnchorAssist implements ClientModInitializer {
             int y = 6;
 
             if (RotationAssist.enabled) {
-                context.drawTextWithShadow(
+                drawContext.drawTextWithShadow(
                         mc.textRenderer,
                         "Rotation Assist",
                         x,
@@ -115,7 +106,7 @@ public class AnchorAssist implements ClientModInitializer {
             }
 
             if (RotationAssist.microSnapTriggered) {
-                context.drawTextWithShadow(
+                drawContext.drawTextWithShadow(
                         mc.textRenderer,
                         "Micro Snap ✔",
                         x,
@@ -127,7 +118,7 @@ public class AnchorAssist implements ClientModInitializer {
     }
 
     // =========================
-    // KEYBIND REGISTER
+    // KEY REGISTER
     // =========================
     private KeyBinding register(String name, int key) {
         return KeyBindingHelper.registerKeyBinding(
@@ -136,9 +127,10 @@ public class AnchorAssist implements ClientModInitializer {
     }
 
     // =========================
-    // TOGGLE HANDLER
+    // TOGGLES
     // =========================
     private void handleToggles(MinecraftClient client) {
+
         while (toggleHitKey.wasPressed())
             autoHitEnabled = toggle(client, autoHitEnabled, "Auto HIT");
 
