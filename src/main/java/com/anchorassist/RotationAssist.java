@@ -100,7 +100,7 @@ public class RotationAssist {
 
         // Set HUD status untuk micro snap
         microSnapTriggered = true;
-        hudTimer = 10;
+        hudTimer = 40;
 
         snapDelay = (microSnapDelayMax == 0)
                 ? 0
