@@ -115,7 +115,7 @@ public class RotationAssist {
             hudTimer--;
         } else {
             isWorking = false;
-            microSnapTriggered = false;
+            microSnapTriggered = true;
         }
     }
 
