@@ -16,9 +16,10 @@ import net.minecraft.util.Hand;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class FastTotem {
-
+    
 // =========================
 // FAST TOTEM (RANDOM DELAY 1-3 TICK)
 // =========================
