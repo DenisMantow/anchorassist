@@ -1,18 +1,19 @@
 package com.anchorassist;
 
+import com.anchorassist.assist.RotationAssist;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
-
+import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.Text;
 
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.decoration.EndCrystalEntity;
-
 import net.minecraft.item.Items;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
@@ -35,11 +36,10 @@ public class AnchorAssist implements ClientModInitializer {
     // =========================
     public static boolean autoHitEnabled = true;
     public static boolean autoAnchorEnabled = true;
-    public static boolean fastTotemEnabled = true; // DIPAKAI FastTotemHandler
+    public static boolean fastTotemEnabled = true;
     public static boolean anchorSafeEnabled = true;
     public static boolean smartCrystalBreakEnabled = true;
     public static boolean autoShieldBreakEnabled = true;
-    public static boolean clickfastTotemEnabled = true;
 
     // =========================
     // KEYBINDS
@@ -52,13 +52,18 @@ public class AnchorAssist implements ClientModInitializer {
     private static KeyBinding smartCrystalKey;
     private static KeyBinding autoShieldKey;
     private static KeyBinding crystalOptimizerKey;
-    public static boolean clickFastTotemEnabled = true;
 
     @Override
     public void onInitializeClient() {
 
+        // =========================
+        // INIT FAST TOTEM
+        // =========================
         FastTotem.init();
 
+        // =========================
+        // REGISTER KEYBINDS
+        // =========================
         toggleHitKey = register("Auto HIT", GLFW.GLFW_KEY_UNKNOWN);
         toggleAnchorKey = register("Anchor Charge", GLFW.GLFW_KEY_UNKNOWN);
         toggleTotemKey = register("Fast Totem", GLFW.GLFW_KEY_UNKNOWN);
@@ -68,8 +73,10 @@ public class AnchorAssist implements ClientModInitializer {
         autoShieldKey = register("Break Shield", GLFW.GLFW_KEY_UNKNOWN);
         crystalOptimizerKey = register("Crystal Optimizer", GLFW.GLFW_KEY_UNKNOWN);
 
+        // =========================
+        // CLIENT TICK HANDLER
+        // =========================
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-
             if (client.player == null || client.world == null) return;
 
             handleToggles(client);
@@ -80,9 +87,41 @@ public class AnchorAssist implements ClientModInitializer {
             if (smartCrystalBreakEnabled) handleSmartCrystalBreak(client);
             if (autoShieldBreakEnabled) handleAutoShieldBreak(client);
 
-            if (CrystalOptimizer.enabled) {
-                CrystalOptimizer.onTick();
+            if (CrystalOptimizer.enabled) CrystalOptimizer.onTick();
+
+            // Update HUD info untuk Rotation Assist
             RotationAssist.tickHUD();
+        });
+
+        // =========================
+        // HUD RENDER
+        // =========================
+        HudRenderCallback.EVENT.register(context -> {
+            MinecraftClient mc = MinecraftClient.getInstance();
+            if (mc.player == null) return;
+
+            int x = 6;
+            int y = 6;
+
+            if (RotationAssist.enabled) {
+                context.drawTextWithShadow(
+                        mc.textRenderer,
+                        "Rotation Assist",
+                        x,
+                        y,
+                        0x00FFAA
+                );
+                y += 10;
+            }
+
+            if (RotationAssist.microSnapTriggered) {
+                context.drawTextWithShadow(
+                        mc.textRenderer,
+                        "Micro Snap ✔",
+                        x,
+                        y,
+                        0x00FF00
+                );
             }
         });
     }
@@ -100,7 +139,6 @@ public class AnchorAssist implements ClientModInitializer {
     // TOGGLE HANDLER
     // =========================
     private void handleToggles(MinecraftClient client) {
-
         while (toggleHitKey.wasPressed())
             autoHitEnabled = toggle(client, autoHitEnabled, "Auto HIT");
 
