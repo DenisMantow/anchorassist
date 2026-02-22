@@ -96,7 +96,7 @@ public class AnchorAssist implements ClientModInitializer {
         // =========================
         // HUD RENDER
         // =========================
-        HudRenderCallback.EVENT.register(context -> {
+        HudRenderCallback.EVENT.register((drawContext, tickDelta) -> {
             MinecraftClient mc = MinecraftClient.getInstance();
             if (mc.player == null) return;
 
