@@ -41,6 +41,7 @@ public class AnchorAssist implements ClientModInitializer {
     public static boolean anchorSafeEnabled = true;
     public static boolean smartCrystalBreakEnabled = true;
     public static boolean autoShieldBreakEnabled = true;
+    public static boolean hitboxStopEnabled = false;
 
     // =========================
     // KEYBINDS
@@ -53,6 +54,7 @@ public class AnchorAssist implements ClientModInitializer {
     private static KeyBinding smartCrystalKey;
     private static KeyBinding autoShieldKey;
     private static KeyBinding crystalOptimizerKey;
+    private static KeyBinding hitboxStopKey;
 
     @Override
     public void onInitializeClient() {
@@ -63,15 +65,17 @@ public class AnchorAssist implements ClientModInitializer {
         HitboxStopManager.register();
 
         // REGISTER KEYBINDS
-        toggleHitKey = register("Auto HIT", GLFW.GLFW_KEY_UNKNOWN);
-        toggleAnchorKey = register("Anchor Charge", GLFW.GLFW_KEY_UNKNOWN);
-        toggleTotemKey = register("Fast Totem", GLFW.GLFW_KEY_UNKNOWN);
-        toggleAnchorSafeKey = register("Anchor Safe", GLFW.GLFW_KEY_UNKNOWN);
-        openGuiKey = register("Open GUI", GLFW.GLFW_KEY_UNKNOWN);
-        smartCrystalKey = register("Crystal Break", GLFW.GLFW_KEY_UNKNOWN);
-        autoShieldKey = register("Break Shield", GLFW.GLFW_KEY_UNKNOWN);
-        crystalOptimizerKey = register("Crystal Optimizer", GLFW.GLFW_KEY_UNKNOWN);
-
+        // REGISTER KEYBINDS
+            toggleHitKey = register("Auto HIT", GLFW.GLFW_KEY_UNKNOWN);    
+            toggleAnchorKey = register("Anchor Charge", GLFW.GLFW_KEY_UNKNOWN);    
+            toggleTotemKey = register("Fast Totem", GLFW.GLFW_KEY_UNKNOWN);    
+            toggleAnchorSafeKey = register("Anchor Safe", GLFW.GLFW_KEY_UNKNOWN);    
+            openGuiKey = register("Open GUI", GLFW.GLFW_KEY_UNKNOWN);    
+            smartCrystalKey = register("Crystal Break", GLFW.GLFW_KEY_UNKNOWN);    
+            autoShieldKey = register("Break Shield", GLFW.GLFW_KEY_UNKNOWN);    
+            crystalOptimizerKey = register("Crystal Optimizer", GLFW.GLFW_KEY_UNKNOWN);    
+            hitboxStopKey = register("Hitbox Stop", GLFW.GLFW_KEY_UNKNOWN); // 🔥 TAMBAHAN
+        
         // CLIENT TICK
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.player == null || client.world == null) return;
@@ -155,6 +159,9 @@ public class AnchorAssist implements ClientModInitializer {
 
         while (autoShieldKey.wasPressed())
             autoShieldBreakEnabled = toggle(client, autoShieldBreakEnabled, "Break Shield");
+
+        while (hitboxStopKey.wasPressed())
+            hitboxStopEnabled = toggle(client, hitboxStopEnabled, "Hitbox Stop");
 
         while (crystalOptimizerKey.wasPressed()) {
             CrystalOptimizer.enabled = !CrystalOptimizer.enabled;
