@@ -60,7 +60,7 @@ public class RotationAssist {
         float pitchDiff = targetRot[1] - currentPitch;
 
         // =========================
-        // ROTATION ASSIST
+        // ROTATION ASSIST (SMOOTH CLAMP)
         // =========================
         if (enabled) {
             float yawChange = MathHelper.clamp(yawDiff, -maxYawPerTick, maxYawPerTick);
@@ -74,7 +74,7 @@ public class RotationAssist {
         }
 
         // =========================
-        // MICRO SNAP
+        // MICRO SNAP (FIXED VERSION)
         // =========================
         if (!microSnapEnabled) return;
 
@@ -83,13 +83,19 @@ public class RotationAssist {
             return;
         }
 
-        if (random.nextFloat() > microSnapChance) return;
-        System.out.println("Micro snap jalan");
-
-        // Recalculate diff setelah perubahan yaw
+        // Hitung ulang diff setelah kemungkinan clamp
         float newYawDiff = MathHelper.wrapDegrees(targetRot[0] - mc.player.getYaw());
         float newPitchDiff = targetRot[1] - mc.player.getPitch();
 
+        // ❌ Jangan aktif kalau target terlalu jauh (biar tidak narik paksa)
+        if (Math.abs(newYawDiff) > 25f || Math.abs(newPitchDiff) > 25f) return;
+
+        // ❌ Jangan aktif kalau sudah sangat dekat
+        if (Math.abs(newYawDiff) < 1.5f && Math.abs(newPitchDiff) < 1.5f) return;
+
+        if (random.nextFloat() > microSnapChance) return;
+
+        // Snap kecil mengikuti arah target
         float snapYaw = Math.signum(newYawDiff) *
                 randomRange(microSnapYawMin, microSnapYawMax);
 
@@ -111,7 +117,7 @@ public class RotationAssist {
     }
 
     // =========================
-    // HUD TICK
+    // HUD TICK RESET
     // =========================
     public static void tickHUD() {
         if (hudTimer > 0) {
