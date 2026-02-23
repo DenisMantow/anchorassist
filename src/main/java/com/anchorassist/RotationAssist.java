@@ -136,14 +136,22 @@ public class RotationAssist {
     }
 
     private static float[] getRotations(MinecraftClient mc, Vec3d target) {
-        Vec3d eyes = mc.player.getEyePos();
-        Vec3d diff = target.subtract(eyes);
 
-        double distXZ = Math.sqrt(diff.x * diff.x + diff.z * diff.z);
+    Vec3d eyes = mc.player.getEyePos();
 
-        float yaw = (float) (Math.toDegrees(Math.atan2(diff.z, diff.x)) - 90f);
-        float pitch = (float) (-Math.toDegrees(Math.atan2(diff.y, distXZ)));
+    // Naikkan target ke tinggi mata (fix narik ke bawah)
+    Vec3d adjustedTarget = new Vec3d(
+            target.x,
+            target.y + 1.5, // tinggi badan target (center mass)
+            target.z
+    );
 
-        return new float[]{yaw, pitch};
-    }
+    Vec3d diff = adjustedTarget.subtract(eyes);
+
+    double distXZ = Math.sqrt(diff.x * diff.x + diff.z * diff.z);
+
+    float yaw = (float) (Math.toDegrees(Math.atan2(diff.z, diff.x)) - 90f);
+    float pitch = (float) (-Math.toDegrees(Math.atan2(diff.y, distXZ)));
+
+    return new float[]{yaw, pitch};
 }
