@@ -59,6 +59,14 @@ public class AnchorAssistScreen extends Screen {
                 "Fast Totem",
                 () -> AnchorAssist.fastTotemEnabled,
                 v -> AnchorAssist.fastTotemEnabled = v);
+        yLeft += spacing;
+
+        // 🔥 HITBOX STOP (DITAMBAHKAN DI SINI)
+        addToggle(leftX, yLeft, buttonWidth, buttonHeight,
+                "Hitbox Stop",
+                () -> AnchorAssist.hitboxStopEnabled,
+                v -> AnchorAssist.hitboxStopEnabled = v);
+        yLeft += spacing;
 
         // =========================
         // KANAN – ASSIST & OPTIMIZER
