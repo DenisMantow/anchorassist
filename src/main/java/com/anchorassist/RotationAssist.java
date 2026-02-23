@@ -11,17 +11,17 @@ public class RotationAssist {
     // =========================
     // TOGGLE
     // =========================
-    public static boolean enabled = false;          // Rotation Assist
-    public static boolean microSnapEnabled = true;  // Micro Snap
+    public static boolean enabled = false;
+    public static boolean microSnapEnabled = true;
 
     // =========================
-    // ROTATION CLAMP
+    // ROTATION LIMIT
     // =========================
     public static float maxYawPerTick = 18.0f;
     public static float maxPitchPerTick = 12.0f;
 
     // =========================
-    // MICRO SNAP SETTINGS
+    // MICRO SNAP
     // =========================
     public static float microSnapYawMin = 4.0f;
     public static float microSnapYawMax = 4.0f;
@@ -31,7 +31,7 @@ public class RotationAssist {
     public static int microSnapDelayMax = 0;
 
     // =========================
-    // HUD STATUS
+    // HUD
     // =========================
     public static boolean isWorking = false;
     public static boolean microSnapTriggered = false;
@@ -44,7 +44,7 @@ public class RotationAssist {
     private static final Random random = new Random();
 
     // =========================
-    // MAIN APPLY
+    // MAIN
     // =========================
     public static void apply(MinecraftClient mc, Vec3d target) {
 
@@ -59,9 +59,7 @@ public class RotationAssist {
         float yawDiff = MathHelper.wrapDegrees(targetRot[0] - currentYaw);
         float pitchDiff = targetRot[1] - currentPitch;
 
-        // =========================
-        // ROTATION ASSIST (SMOOTH CLAMP)
-        // =========================
+        // ROTATION ASSIST
         if (enabled) {
             float yawChange = MathHelper.clamp(yawDiff, -maxYawPerTick, maxYawPerTick);
             float pitchChange = MathHelper.clamp(pitchDiff, -maxPitchPerTick, maxPitchPerTick);
@@ -73,9 +71,7 @@ public class RotationAssist {
             hudTimer = 10;
         }
 
-        // =========================
-        // MICRO SNAP (FIXED VERSION)
-        // =========================
+        // MICRO SNAP
         if (!microSnapEnabled) return;
 
         if (snapDelay > 0) {
@@ -83,19 +79,14 @@ public class RotationAssist {
             return;
         }
 
-        // Hitung ulang diff setelah kemungkinan clamp
+        if (random.nextFloat() > microSnapChance) return;
+
         float newYawDiff = MathHelper.wrapDegrees(targetRot[0] - mc.player.getYaw());
         float newPitchDiff = targetRot[1] - mc.player.getPitch();
 
-        // ❌ Jangan aktif kalau target terlalu jauh (biar tidak narik paksa)
-        if (Math.abs(newYawDiff) > 25f || Math.abs(newPitchDiff) > 25f) return;
+        // Hindari snap kalau beda terlalu kecil
+        if (Math.abs(newYawDiff) < 1f && Math.abs(newPitchDiff) < 1f) return;
 
-        // ❌ Jangan aktif kalau sudah sangat dekat
-        if (Math.abs(newYawDiff) < 1.5f && Math.abs(newPitchDiff) < 1.5f) return;
-
-        if (random.nextFloat() > microSnapChance) return;
-
-        // Snap kecil mengikuti arah target
         float snapYaw = Math.signum(newYawDiff) *
                 randomRange(microSnapYawMin, microSnapYawMax);
 
@@ -117,7 +108,7 @@ public class RotationAssist {
     }
 
     // =========================
-    // HUD TICK RESET
+    // HUD TICK
     // =========================
     public static void tickHUD() {
         if (hudTimer > 0) {
@@ -137,21 +128,22 @@ public class RotationAssist {
 
     private static float[] getRotations(MinecraftClient mc, Vec3d target) {
 
-    Vec3d eyes = mc.player.getEyePos();
+        Vec3d eyes = mc.player.getEyePos();
 
-    // Naikkan target ke tinggi mata (fix narik ke bawah)
-    Vec3d adjustedTarget = new Vec3d(
-            target.x,
-            target.y + 1.5, // tinggi badan target (center mass)
-            target.z
-    );
+        // FIX: Aim ke tengah badan, bukan kaki
+        Vec3d adjustedTarget = new Vec3d(
+                target.x,
+                target.y + 1.5,
+                target.z
+        );
 
-    Vec3d diff = adjustedTarget.subtract(eyes);
+        Vec3d diff = adjustedTarget.subtract(eyes);
 
-    double distXZ = Math.sqrt(diff.x * diff.x + diff.z * diff.z);
+        double distXZ = Math.sqrt(diff.x * diff.x + diff.z * diff.z);
 
-    float yaw = (float) (Math.toDegrees(Math.atan2(diff.z, diff.x)) - 90f);
-    float pitch = (float) (-Math.toDegrees(Math.atan2(diff.y, distXZ)));
+        float yaw = (float) (Math.toDegrees(Math.atan2(diff.z, diff.x)) - 90f);
+        float pitch = (float) (-Math.toDegrees(Math.atan2(diff.y, distXZ)));
 
-    return new float[]{yaw, pitch};
+        return new float[]{yaw, pitch};
+    }
 }
