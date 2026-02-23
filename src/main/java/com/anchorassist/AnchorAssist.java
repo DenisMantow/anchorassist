@@ -1,5 +1,6 @@
 package com.anchorassist;
 
+import com.anchorassist.assist.HitboxStopManager;
 import com.anchorassist.assist.RotationAssist;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -58,6 +59,8 @@ public class AnchorAssist implements ClientModInitializer {
 
         // INIT FAST TOTEM
         FastTotem.init();
+
+        HitboxStopManager.register();
 
         // REGISTER KEYBINDS
         toggleHitKey = register("Auto HIT", GLFW.GLFW_KEY_UNKNOWN);
