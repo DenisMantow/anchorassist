@@ -86,6 +86,7 @@ public class AnchorAssist implements ClientModInitializer {
             Vec3d target = client.player.getPos().add(
                     client.player.getRotationVec(1.0f).multiply(3)
             );
+            RotationAssist.apply(client, target);
             RotationAssist.tickHUD();
         });
 
