@@ -84,6 +84,7 @@ public class RotationAssist {
         }
 
         if (random.nextFloat() > microSnapChance) return;
+        System.out.println("Micro snap jalan");
 
         // Recalculate diff setelah perubahan yaw
         float newYawDiff = MathHelper.wrapDegrees(targetRot[0] - mc.player.getYaw());
