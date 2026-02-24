@@ -31,6 +31,17 @@ import org.lwjgl.glfw.GLFW;
 import walksy.optimizer.CrystalOptimizer;
 
 public class AnchorAssist implements ClientModInitializer {
+    
+    // =========================
+    // HITBOX STOP MODE (3 STATE)
+    // =========================
+    public enum HitboxMode {
+        OFF,
+        FULL,
+        PITCH
+    }
+
+    public static HitboxMode hitboxMode = HitboxMode.OFF;
 
     // =========================
     // TOGGLES
