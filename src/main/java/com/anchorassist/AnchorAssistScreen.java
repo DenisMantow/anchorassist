@@ -61,11 +61,25 @@ public class AnchorAssistScreen extends Screen {
                 v -> AnchorAssist.fastTotemEnabled = v);
         yLeft += spacing;
 
-        // 🔥 HITBOX STOP (DITAMBAHKAN DI SINI)
-        addToggle(leftX, yLeft, buttonWidth, buttonHeight,
-                "Hitbox Stop",
-                () -> AnchorAssist.hitboxStopEnabled,
-                v -> AnchorAssist.hitboxStopEnabled = v);
+        // =========================
+        // 🔥 HITBOX MODE (3 STATE)
+        // =========================
+
+        this.addDrawableChild(ButtonWidget.builder(
+                getHitboxModeText(),
+                button -> {
+
+                    switch (AnchorAssist.hitboxMode) {
+                        case OFF -> AnchorAssist.hitboxMode = AnchorAssist.HitboxMode.FULL;
+                        case FULL -> AnchorAssist.hitboxMode = AnchorAssist.HitboxMode.PITCH;
+                        case PITCH -> AnchorAssist.hitboxMode = AnchorAssist.HitboxMode.OFF;
+                    }
+
+                    button.setMessage(getHitboxModeText());
+                })
+                .dimensions(leftX, yLeft, buttonWidth, buttonHeight)
+                .build()
+        );
         yLeft += spacing;
 
         // =========================
@@ -91,7 +105,7 @@ public class AnchorAssistScreen extends Screen {
         yRight += spacing;
 
         // =========================
-        // 🧭 ROTATION ASSIST (LEGIT)
+        // 🧭 ROTATION ASSIST
         // =========================
 
         addToggle(rightX, yRight, buttonWidth, buttonHeight,
@@ -104,6 +118,27 @@ public class AnchorAssistScreen extends Screen {
                 "Micro Snap",
                 () -> RotationAssist.microSnapEnabled,
                 v -> RotationAssist.microSnapEnabled = v);
+    }
+
+    // =========================
+    // HITBOX MODE TEXT
+    // =========================
+    private Text getHitboxModeText() {
+
+        return switch (AnchorAssist.hitboxMode) {
+
+            case FULL -> Text.literal("Hitbox Stop: ")
+                    .append(Text.literal("FULL")
+                            .formatted(Formatting.RED));
+
+            case PITCH -> Text.literal("Hitbox Stop: ")
+                    .append(Text.literal("PITCH")
+                            .formatted(Formatting.GREEN));
+
+            default -> Text.literal("Hitbox Stop: ")
+                    .append(Text.literal("OFF")
+                            .formatted(Formatting.GRAY));
+        };
     }
 
     // =========================
@@ -156,7 +191,7 @@ public class AnchorAssistScreen extends Screen {
 
         context.drawCenteredTextWithShadow(
                 this.textRenderer,
-                Text.literal("Legit Assist • Human-like • Safe")
+                Text.literal("Manual Keybind Config In Minecraft Setting")
                         .formatted(Formatting.GRAY),
                 centerX,
                 50,
