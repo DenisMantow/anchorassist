@@ -14,8 +14,11 @@ public class HitboxStopManager {
     private static float lockedPitch;
 
     // 🔥 Lebih ringan & legit
-    private static final int MAX_LOCK_TICKS = 1; 
+    private static final int MAX_LOCK_TICKS = 1;
     private static int cooldown = 0;
+
+    // 🎯 Smooth factor (atur kalau mau lebih lembut)
+    private static final float SMOOTH_FACTOR = 0.35f;
 
     public static void register() {
 
@@ -30,16 +33,25 @@ public class HitboxStopManager {
             // ❌ Jangan aktif saat klik kanan (place block)
             if (client.options.useKey.isPressed()) return;
 
-            // 🔒 Jika sedang lock → tahan rotation
+            // 🔒 Jika sedang lock → smooth dampener (NO SNAP)
             if (lockTicks > 0) {
 
+                float currentYaw = client.player.getYaw();
+                float currentPitch = client.player.getPitch();
+
                 if (AnchorAssist.hitboxMode == AnchorAssist.HitboxMode.FULL) {
-                    client.player.setYaw(lockedYaw);
-                    client.player.setPitch(lockedPitch);
+
+                    float newYaw = currentYaw + (lockedYaw - currentYaw) * SMOOTH_FACTOR;
+                    float newPitch = currentPitch + (lockedPitch - currentPitch) * SMOOTH_FACTOR;
+
+                    client.player.setYaw(newYaw);
+                    client.player.setPitch(newPitch);
                 }
 
                 if (AnchorAssist.hitboxMode == AnchorAssist.HitboxMode.PITCH) {
-                    client.player.setPitch(lockedPitch);
+
+                    float newPitch = currentPitch + (lockedPitch - currentPitch) * SMOOTH_FACTOR;
+                    client.player.setPitch(newPitch);
                 }
 
                 lockTicks--;
@@ -64,7 +76,7 @@ public class HitboxStopManager {
 
             if (distance > maxRange) return;
 
-            // 🎯 Crosshair sudah kena hitbox → lock ringan
+            // 🎯 Crosshair sudah kena hitbox → aktifkan smooth stop
             lockedYaw = client.player.getYaw();
             lockedPitch = client.player.getPitch();
             lockTicks = MAX_LOCK_TICKS;
