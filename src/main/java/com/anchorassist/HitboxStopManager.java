@@ -21,7 +21,7 @@ public class HitboxStopManager {
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
 
-            if (!AnchorAssist.hitboxStopEnabled) return;
+            if (AnchorAssist.hitboxMode == AnchorAssist.HitboxMode.OFF) return;
             if (client.player == null || client.world == null) return;
 
             // Cooldown tick down
@@ -32,8 +32,16 @@ public class HitboxStopManager {
 
             // 🔒 Jika sedang lock → tahan rotation
             if (lockTicks > 0) {
-                client.player.setYaw(lockedYaw);
-                client.player.setPitch(lockedPitch);
+
+                if (AnchorAssist.hitboxMode == AnchorAssist.HitboxMode.FULL) {
+                    client.player.setYaw(lockedYaw);
+                    client.player.setPitch(lockedPitch);
+                }
+
+                if (AnchorAssist.hitboxMode == AnchorAssist.HitboxMode.PITCH) {
+                    client.player.setPitch(lockedPitch);
+                }
+
                 lockTicks--;
                 return;
             }
