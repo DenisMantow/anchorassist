@@ -129,7 +129,7 @@ public class AnchorAssistScreen extends Screen {
 
             case FULL -> Text.literal("Hitbox Stop: ")
                     .append(Text.literal("FULL")
-                            .formatted(Formatting.RED));
+                            .formatted(Formatting.GREEN));
 
             case PITCH -> Text.literal("Hitbox Stop: ")
                     .append(Text.literal("PITCH")
@@ -137,7 +137,7 @@ public class AnchorAssistScreen extends Screen {
 
             default -> Text.literal("Hitbox Stop: ")
                     .append(Text.literal("OFF")
-                            .formatted(Formatting.GRAY));
+                            .formatted(Formatting.RED));
         };
     }
 
