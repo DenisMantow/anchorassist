@@ -19,7 +19,10 @@ public class FastTotem {
     }
 
     private static void onTick(MinecraftClient client) {
+
+        if (!AnchorAssist.fastTotemEnabled) return; // ✅ WAJIB ADA
         if (client.player == null) return;
+
         handle(client);
     }
 
