@@ -227,7 +227,7 @@ public class AnchorAssist implements ClientModInitializer {
             case 0 -> {
                 previousSlot = client.player.getInventory().selectedSlot;
                 client.player.getInventory().selectedSlot = glowSlot;
-                anchorDelay = randomDelay(2, 5);
+                anchorDelay = randomDelay(1, 2);
                 anchorStage = 1;
             }
 
@@ -242,13 +242,13 @@ public class AnchorAssist implements ClientModInitializer {
 
                 client.player.swingHand(Hand.MAIN_HAND);
 
-                anchorDelay = randomDelay(4, 7);
+                anchorDelay = randomDelay(2, 3);
                 anchorStage = 2;
             }
 
             case 2 -> {
                 client.player.getInventory().selectedSlot = previousSlot;
-                anchorDelay = randomDelay(3, 6);
+                anchorDelay = randomDelay(1, 2);
                 anchorStage = 0;
             }
         }
@@ -276,7 +276,7 @@ public class AnchorAssist implements ClientModInitializer {
     }
 
     // =========================
-    // ANCHOR SAFE
+    // ANCHOR SAFE (EDITED)
     // =========================
     private void handleAnchorSafe(MinecraftClient mc) {
 
