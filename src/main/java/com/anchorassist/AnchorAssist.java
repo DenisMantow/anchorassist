@@ -1,16 +1,13 @@
 package com.anchorassist;
 
 import com.anchorassist.assist.HitboxStopManager;
-import com.anchorassist.assist.RotationAssist;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
-import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
-import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.Text;
 
 import net.minecraft.entity.player.PlayerEntity;
@@ -30,17 +27,14 @@ import org.lwjgl.glfw.GLFW;
 
 import walksy.optimizer.CrystalOptimizer;
 
-public class AnchorAssist implements ClientModInitializer {
-    
-    // =========================
-    // HITBOX STOP MODE (3 STATE)
-    // =========================
-    public enum HitboxMode {
-        OFF,
-        FULL,
-        PITCH
-    }
+import java.util.concurrent.ThreadLocalRandom;
 
+public class AnchorAssist implements ClientModInitializer {
+
+    // =========================
+    // HITBOX STOP MODE
+    // =========================
+    public enum HitboxMode { OFF, FULL, PITCH }
     public static HitboxMode hitboxMode = HitboxMode.OFF;
 
     // =========================
@@ -52,7 +46,6 @@ public class AnchorAssist implements ClientModInitializer {
     public static boolean anchorSafeEnabled = true;
     public static boolean smartCrystalBreakEnabled = true;
     public static boolean autoShieldBreakEnabled = true;
-    public static boolean hitboxStopEnabled = false;
 
     // =========================
     // KEYBINDS
@@ -65,30 +58,31 @@ public class AnchorAssist implements ClientModInitializer {
     private static KeyBinding smartCrystalKey;
     private static KeyBinding autoShieldKey;
     private static KeyBinding crystalOptimizerKey;
-    private static KeyBinding hitboxStopKey;
+
+    // =========================
+    // AUTO ANCHOR SYSTEM
+    // =========================
+    private int anchorDelay = 0;
+    private int anchorStage = 0;
+    private int previousSlot = 0;
 
     @Override
     public void onInitializeClient() {
 
-        // INIT FAST TOTEM
         FastTotem.init();
-
         HitboxStopManager.register();
 
-        // REGISTER KEYBINDS
-        // REGISTER KEYBINDS
-            toggleHitKey = register("Auto HIT", GLFW.GLFW_KEY_UNKNOWN);    
-            toggleAnchorKey = register("Anchor Charge", GLFW.GLFW_KEY_UNKNOWN);    
-            toggleTotemKey = register("Fast Totem", GLFW.GLFW_KEY_UNKNOWN);    
-            toggleAnchorSafeKey = register("Anchor Safe", GLFW.GLFW_KEY_UNKNOWN);    
-            openGuiKey = register("Open GUI", GLFW.GLFW_KEY_UNKNOWN);    
-            smartCrystalKey = register("Crystal Break", GLFW.GLFW_KEY_UNKNOWN);    
-            autoShieldKey = register("Break Shield", GLFW.GLFW_KEY_UNKNOWN);    
-            crystalOptimizerKey = register("Crystal Optimizer", GLFW.GLFW_KEY_UNKNOWN);    
-            hitboxStopKey = register("Hitbox Stop", GLFW.GLFW_KEY_UNKNOWN); // 🔥 TAMBAHAN
-        
-        // CLIENT TICK
+        toggleHitKey = register("Auto HIT", GLFW.GLFW_KEY_UNKNOWN);
+        toggleAnchorKey = register("Anchor Charge", GLFW.GLFW_KEY_UNKNOWN);
+        toggleTotemKey = register("Fast Totem", GLFW.GLFW_KEY_UNKNOWN);
+        toggleAnchorSafeKey = register("Anchor Safe", GLFW.GLFW_KEY_UNKNOWN);
+        openGuiKey = register("Open GUI", GLFW.GLFW_KEY_UNKNOWN);
+        smartCrystalKey = register("Crystal Break", GLFW.GLFW_KEY_UNKNOWN);
+        autoShieldKey = register("Break Shield", GLFW.GLFW_KEY_UNKNOWN);
+        crystalOptimizerKey = register("Crystal Optimizer", GLFW.GLFW_KEY_UNKNOWN);
+
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
+
             if (client.player == null || client.world == null) return;
 
             handleToggles(client);
@@ -100,42 +94,6 @@ public class AnchorAssist implements ClientModInitializer {
             if (autoShieldBreakEnabled) handleAutoShieldBreak(client);
 
             if (CrystalOptimizer.enabled) CrystalOptimizer.onTick();
-
-            Vec3d target = client.player.getPos().add(
-                    client.player.getRotationVec(1.0f).multiply(3)
-            );
-            RotationAssist.apply(client, target);
-            RotationAssist.tickHUD();
-        });
-
-        // HUD RENDER (FIXED)
-        HudRenderCallback.EVENT.register((drawContext, tickDelta) -> {
-            MinecraftClient mc = MinecraftClient.getInstance();
-            if (mc.player == null) return;
-
-            int x = 6;
-            int y = 6;
-
-            if (RotationAssist.enabled) {
-                drawContext.drawTextWithShadow(
-                        mc.textRenderer,
-                        "Rotation Assist",
-                        x,
-                        y,
-                        0x00FFAA
-                );
-                y += 10;
-            }
-
-            if (RotationAssist.microSnapTriggered) {
-                drawContext.drawTextWithShadow(
-                        mc.textRenderer,
-                        "Micro Snap ✔",
-                        x,
-                        y,
-                        0x00FF00
-                );
-            }
         });
     }
 
@@ -171,9 +129,6 @@ public class AnchorAssist implements ClientModInitializer {
         while (autoShieldKey.wasPressed())
             autoShieldBreakEnabled = toggle(client, autoShieldBreakEnabled, "Break Shield");
 
-        while (hitboxStopKey.wasPressed())
-            hitboxStopEnabled = toggle(client, hitboxStopEnabled, "Hitbox Stop");
-
         while (crystalOptimizerKey.wasPressed()) {
             CrystalOptimizer.enabled = !CrystalOptimizer.enabled;
             client.player.sendMessage(
@@ -196,6 +151,7 @@ public class AnchorAssist implements ClientModInitializer {
     // AUTO HIT
     // =========================
     private void handleAutoHit(MinecraftClient client) {
+
         if (client.crosshairTarget instanceof EntityHitResult hit &&
                 hit.getEntity() instanceof PlayerEntity target) {
 
@@ -212,6 +168,7 @@ public class AnchorAssist implements ClientModInitializer {
     // SMART CRYSTAL BREAK
     // =========================
     private void handleSmartCrystalBreak(MinecraftClient client) {
+
         if (!(client.crosshairTarget instanceof EntityHitResult hit)) return;
         if (!(hit.getEntity() instanceof EndCrystalEntity crystal)) return;
 
@@ -244,11 +201,19 @@ public class AnchorAssist implements ClientModInitializer {
     }
 
     // =========================
-    // AUTO ANCHOR
+    // AUTO ANCHOR (HUMAN-LIKE)
     // =========================
     private void handleAutoAnchor(MinecraftClient client) {
 
-        if (!(client.crosshairTarget instanceof BlockHitResult hit)) return;
+        if (anchorDelay > 0) {
+            anchorDelay--;
+            return;
+        }
+
+        if (!(client.crosshairTarget instanceof BlockHitResult hit)) {
+            anchorStage = 0;
+            return;
+        }
 
         BlockState state = client.world.getBlockState(hit.getBlockPos());
         if (!(state.getBlock() instanceof RespawnAnchorBlock)) return;
@@ -257,9 +222,57 @@ public class AnchorAssist implements ClientModInitializer {
         int glowSlot = findHotbarItem(Items.GLOWSTONE, client);
         if (glowSlot == -1) return;
 
-        client.player.getInventory().selectedSlot = glowSlot;
-        client.interactionManager.interactBlock(client.player, Hand.MAIN_HAND, hit);
-        client.player.swingHand(Hand.MAIN_HAND);
+        switch (anchorStage) {
+
+            case 0 -> {
+                previousSlot = client.player.getInventory().selectedSlot;
+                client.player.getInventory().selectedSlot = glowSlot;
+                anchorDelay = randomDelay(2, 5);
+                anchorStage = 1;
+            }
+
+            case 1 -> {
+                applyMicroHeadMovement(client);
+
+                client.interactionManager.interactBlock(
+                        client.player,
+                        Hand.MAIN_HAND,
+                        hit
+                );
+
+                client.player.swingHand(Hand.MAIN_HAND);
+
+                anchorDelay = randomDelay(4, 7);
+                anchorStage = 2;
+            }
+
+            case 2 -> {
+                client.player.getInventory().selectedSlot = previousSlot;
+                anchorDelay = randomDelay(3, 6);
+                anchorStage = 0;
+            }
+        }
+    }
+
+    private int randomDelay(int min, int max) {
+        return ThreadLocalRandom.current().nextInt(min, max + 1);
+    }
+
+    // =========================
+    // MICRO HEAD MOVEMENT
+    // =========================
+    private void applyMicroHeadMovement(MinecraftClient client) {
+
+        if (ThreadLocalRandom.current().nextInt(100) > 70) return;
+
+        float yawOffset = (float) ThreadLocalRandom.current()
+                .nextDouble(-1.0, 1.0);
+
+        float pitchOffset = (float) ThreadLocalRandom.current()
+                .nextDouble(-0.7, 0.7);
+
+        client.player.setYaw(client.player.getYaw() + yawOffset);
+        client.player.setPitch(client.player.getPitch() + pitchOffset);
     }
 
     // =========================
