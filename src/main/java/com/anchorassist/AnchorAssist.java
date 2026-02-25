@@ -140,10 +140,12 @@ public class AnchorAssist implements ClientModInitializer {
         while (macePvPKey.wasPressed()) {
             macePvPEnabled = toggle(client, macePvPEnabled, "Mace PvP");
             MacePvPManager.macePvPEnabled = macePvPEnabled;
+        }
 
         while (autoFlyingKey.wasPressed()) {
             autoFlyingEnabled = toggle(client, autoFlyingEnabled, "Auto Flying");
             MacePvPManager.autoFlyingEnabled = autoFlyingEnabled;
+        }
 
         while (crystalOptimizerKey.wasPressed()) {
             CrystalOptimizer.enabled = !CrystalOptimizer.enabled;
