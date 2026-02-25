@@ -108,11 +108,11 @@ public class AnchorAssistScreen extends Screen {
         // =========================
 
         addToggle(rightX, yRight, buttonWidth, buttonHeight,
-                "Auto Flying",
-                () -> AnchorAssist.autoFlyingEnabled,
+                "Pearl Combo",
+                () -> AnchorAssist.pearlComboEnabled,
                 v -> {
-                    AnchorAssist.autoFlyingEnabled = v;
-                    MacePvPManager.autoFlyingEnabled = v;
+                    AnchorAssist.pearlComboEnabled = v;
+                    com.anchorassist.assist.MacePvPManager.pearlComboEnabled = v;
                 });
         yRight += spacing;
 
