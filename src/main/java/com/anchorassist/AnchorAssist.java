@@ -219,19 +219,11 @@ public class AnchorAssist implements ClientModInitializer {
     }
 
     // =========================
-    // AUTO ANCHOR (HUMAN-LIKE)
+    // AUTO ANCHOR
     // =========================
     private void handleAutoAnchor(MinecraftClient client) {
 
-        if (anchorDelay > 0) {
-            anchorDelay--;
-            return;
-        }
-
-        if (!(client.crosshairTarget instanceof BlockHitResult hit)) {
-            anchorStage = 0;
-            return;
-        }
+        if (!(client.crosshairTarget instanceof BlockHitResult hit)) return;
 
         BlockState state = client.world.getBlockState(hit.getBlockPos());
         if (!(state.getBlock() instanceof RespawnAnchorBlock)) return;
@@ -240,61 +232,13 @@ public class AnchorAssist implements ClientModInitializer {
         int glowSlot = findHotbarItem(Items.GLOWSTONE, client);
         if (glowSlot == -1) return;
 
-        switch (anchorStage) {
-
-            case 0 -> {
-                previousSlot = client.player.getInventory().selectedSlot;
-                client.player.getInventory().selectedSlot = glowSlot;
-                anchorDelay = randomDelay(1, 2);
-                anchorStage = 1;
-            }
-
-            case 1 -> {
-                applyMicroHeadMovement(client);
-
-                client.interactionManager.interactBlock(
-                        client.player,
-                        Hand.MAIN_HAND,
-                        hit
-                );
-
-                client.player.swingHand(Hand.MAIN_HAND);
-
-                anchorDelay = randomDelay(2, 3);
-                anchorStage = 2;
-            }
-
-            case 2 -> {
-                client.player.getInventory().selectedSlot = previousSlot;
-                anchorDelay = randomDelay(1, 2);
-                anchorStage = 0;
-            }
-        }
-    }
-
-    private int randomDelay(int min, int max) {
-        return ThreadLocalRandom.current().nextInt(min, max + 1);
+        client.player.getInventory().selectedSlot = glowSlot;
+        client.interactionManager.interactBlock(client.player, Hand.MAIN_HAND, hit);
+        client.player.swingHand(Hand.MAIN_HAND);
     }
 
     // =========================
-    // MICRO HEAD MOVEMENT
-    // =========================
-    private void applyMicroHeadMovement(MinecraftClient client) {
-
-        if (ThreadLocalRandom.current().nextInt(100) > 70) return;
-
-        float yawOffset = (float) ThreadLocalRandom.current()
-                .nextDouble(-1.0, 1.0);
-
-        float pitchOffset = (float) ThreadLocalRandom.current()
-                .nextDouble(-0.7, 0.7);
-
-        client.player.setYaw(client.player.getYaw() + yawOffset);
-        client.player.setPitch(client.player.getPitch() + pitchOffset);
-    }
-
-    // =========================
-    // ANCHOR SAFE (EDITED)
+    // ANCHOR SAFE
     // =========================
     private void handleAnchorSafe(MinecraftClient mc) {
 
