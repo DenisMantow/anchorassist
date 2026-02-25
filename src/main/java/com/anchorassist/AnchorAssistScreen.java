@@ -104,20 +104,6 @@ public class AnchorAssistScreen extends Screen {
                 v -> walksy.optimizer.CrystalOptimizer.enabled = v);
         yRight += spacing;
 
-        // =========================
-        // 🧭 ROTATION ASSIST
-        // =========================
-
-        addToggle(rightX, yRight, buttonWidth, buttonHeight,
-                "Rotation Assist",
-                () -> RotationAssist.enabled,
-                v -> RotationAssist.enabled = v);
-        yRight += spacing;
-
-        addToggle(rightX, yRight, buttonWidth, buttonHeight,
-                "Micro Snap",
-                () -> RotationAssist.microSnapEnabled,
-                v -> RotationAssist.microSnapEnabled = v);
     }
 
     // =========================
