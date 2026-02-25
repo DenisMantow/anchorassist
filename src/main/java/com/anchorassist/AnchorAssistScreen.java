@@ -1,5 +1,6 @@
 package com.anchorassist;
 
+import com.anchorassist.assist.MacePvPManager;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.DrawContext;
@@ -22,17 +23,17 @@ public class AnchorAssistScreen extends Screen {
         int buttonHeight = 20;
         int spacing = 24;
 
-        // ⬅ KIRI
+        // ⬅ LEFT
         int leftX = centerX - 170;
 
-        // ➡ KANAN
+        // ➡ RIGHT
         int rightX = centerX + 20;
 
         int yLeft = startY;
         int yRight = startY;
 
         // =========================
-        // KIRI – CORE COMBAT
+        // LEFT – CORE COMBAT
         // =========================
 
         addToggle(leftX, yLeft, buttonWidth, buttonHeight,
@@ -60,7 +61,7 @@ public class AnchorAssistScreen extends Screen {
         yLeft += spacing;
 
         // =========================
-        // 🔥 HITBOX MODE (3 STATE)
+        // HITBOX MODE (3 STATE)
         // =========================
 
         this.addDrawableChild(ButtonWidget.builder(
@@ -81,7 +82,7 @@ public class AnchorAssistScreen extends Screen {
         yLeft += spacing;
 
         // =========================
-        // KANAN – ASSIST & OPTIMIZER
+        // RIGHT – ASSIST & OPTIMIZER
         // =========================
 
         addToggle(rightX, yRight, buttonWidth, buttonHeight,
@@ -102,11 +103,33 @@ public class AnchorAssistScreen extends Screen {
                 v -> walksy.optimizer.CrystalOptimizer.enabled = v);
         yRight += spacing;
 
+        // =========================
+        // 🔥 NEW FEATURES – RIGHT SIDE
+        // =========================
+
+        addToggle(rightX, yRight, buttonWidth, buttonHeight,
+                "Auto Flying",
+                () -> AnchorAssist.autoFlyingEnabled,
+                v -> {
+                    AnchorAssist.autoFlyingEnabled = v;
+                    MacePvPManager.autoFlyingEnabled = v;
+                });
+        yRight += spacing;
+
+        addToggle(rightX, yRight, buttonWidth, buttonHeight,
+                "Mace PvP",
+                () -> AnchorAssist.macePvPEnabled,
+                v -> {
+                    AnchorAssist.macePvPEnabled = v;
+                    MacePvPManager.macePvPEnabled = v;
+                });
+        yRight += spacing;
     }
 
     // =========================
     // HITBOX MODE TEXT
     // =========================
+
     private Text getHitboxModeText() {
 
         return switch (AnchorAssist.hitboxMode) {
@@ -128,6 +151,7 @@ public class AnchorAssistScreen extends Screen {
     // =========================
     // TOGGLE HELPER
     // =========================
+
     private void addToggle(int x, int y, int width, int height,
                            String name,
                            java.util.function.Supplier<Boolean> getter,
@@ -156,6 +180,7 @@ public class AnchorAssistScreen extends Screen {
     // =========================
     // RENDER
     // =========================
+
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
 
@@ -169,7 +194,7 @@ public class AnchorAssistScreen extends Screen {
                 Text.literal("BNDTxDen MOD - Crystal PvP GUI")
                         .formatted(Formatting.AQUA, Formatting.BOLD),
                 centerX,
-                35,
+                        35,
                 0xFFFFFF
         );
 
