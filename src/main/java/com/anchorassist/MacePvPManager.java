@@ -14,6 +14,7 @@ public class MacePvPManager {
 
     public static boolean macePvPEnabled = true;
     public static boolean autoFlyingEnabled = true;
+    public static boolean pearlComboEnabled = true;
 
     private static int attackDelay = 0;
     private static int switchDelay = 0;
@@ -30,6 +31,9 @@ public class MacePvPManager {
 
             if (macePvPEnabled)
                 handleMacePvP(client);
+
+            if (pearlComboEnabled)
+                handlePearlCombo(client);
         });
     }
 
@@ -38,12 +42,25 @@ public class MacePvPManager {
     // =========================
     private static void handleAutoFlying(MinecraftClient client) {
 
-        if (!client.player.isFallFlying()) return;
+        if (!client.player.getInventory().getArmorStack(2).isEmpty()) {
 
-        if (client.options.useKey.isPressed() &&
-                client.player.getMainHandStack().isOf(Items.FIREWORK_ROCKET)) {
+            if (client.options.useKey.isPressed() &&
+                    client.player.getMainHandStack().isOf(Items.FIREWORK_ROCKET)) {
 
-            client.player.jump();
+                if (!client.player.isFallFlying()) {
+
+                    if (!client.player.isOnGround()) {
+                        client.player.startFallFlying();
+                    } else {
+                        client.player.jump();
+                    }
+
+                } else {
+                    if (ThreadLocalRandom.current().nextInt(100) < 25) {
+                        client.player.jump();
+                    }
+                }
+            }
         }
     }
 
@@ -61,13 +78,9 @@ public class MacePvPManager {
         double distance = client.player.distanceTo(target);
         if (distance > 3.1D) return;
 
-        // Slot 0 = Mace
-        int maceSlot = 0;
+        int maceSlot = 0;   // Slot 1
+        int axeSlot = 6;    // Slot 7
 
-        // Slot 1 = Axe
-        int axeSlot = 6;
-
-        // Kalau target blocking → pindah ke axe dulu
         if (target.isBlocking()) {
 
             if (switchDelay == 0) {
@@ -88,7 +101,6 @@ public class MacePvPManager {
             return;
         }
 
-        // Balik ke mace setelah axe
         if (returningToMace && switchDelay == 0) {
             client.player.getInventory().selectedSlot = maceSlot;
             returningToMace = false;
@@ -96,7 +108,6 @@ public class MacePvPManager {
             return;
         }
 
-        // Attack pakai mace (slot 0)
         if (client.player.getInventory().selectedSlot != maceSlot)
             client.player.getInventory().selectedSlot = maceSlot;
 
@@ -106,6 +117,34 @@ public class MacePvPManager {
             client.interactionManager.attackEntity(client.player, target);
             client.player.swingHand(Hand.MAIN_HAND);
             attackDelay = random(3,6);
+        }
+    }
+
+    // =========================
+    // PEARL → SLOT 8 INSTANT
+    // =========================
+    private static void handlePearlCombo(MinecraftClient client) {
+
+        if (client.options.useKey.wasPressed() &&
+                client.player.getMainHandStack().isOf(Items.ENDER_PEARL)) {
+
+            int previousSlot = client.player.getInventory().selectedSlot;
+            int slot8 = 8; // Slot terakhir hotbar
+
+            if (client.player.getInventory().getStack(slot8).isEmpty())
+                return;
+
+            // Switch ke slot 8
+            client.player.getInventory().selectedSlot = slot8;
+
+            // Instant right click
+            client.interactionManager.interactItem(
+                    client.player,
+                    Hand.MAIN_HAND
+            );
+
+            // Balik ke slot sebelumnya
+            client.player.getInventory().selectedSlot = previousSlot;
         }
     }
 
