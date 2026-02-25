@@ -71,6 +71,7 @@ public class AnchorAssist implements ClientModInitializer {
 
         FastTotem.init();
         HitboxStopManager.register();
+        MacePvPManager.register();
 
         toggleHitKey = register("Auto HIT", GLFW.GLFW_KEY_UNKNOWN);
         toggleAnchorKey = register("Anchor Charge", GLFW.GLFW_KEY_UNKNOWN);
