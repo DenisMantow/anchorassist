@@ -48,7 +48,6 @@ public class AnchorAssist implements ClientModInitializer {
     public static boolean smartCrystalBreakEnabled = true;
     public static boolean autoShieldBreakEnabled = true;
     public static boolean macePvPEnabled = true;
-    public static boolean autoFlyingEnabled = true;
     public static boolean pearlComboEnabled = true;
 
     // =========================
@@ -63,7 +62,6 @@ public class AnchorAssist implements ClientModInitializer {
     private static KeyBinding autoShieldKey;
     private static KeyBinding crystalOptimizerKey;
     private static KeyBinding macePvPKey;
-    private static KeyBinding autoFlyingKey;
     private static KeyBinding pearlComboKey;
 
     // =========================
@@ -89,7 +87,6 @@ public class AnchorAssist implements ClientModInitializer {
         autoShieldKey = register("Break Shield", GLFW.GLFW_KEY_UNKNOWN);
         crystalOptimizerKey = register("Crystal Optimizer", GLFW.GLFW_KEY_UNKNOWN);
         macePvPKey = register("Mace PvP", GLFW.GLFW_KEY_UNKNOWN);
-        autoFlyingKey = register("Auto Flying", GLFW.GLFW_KEY_UNKNOWN);
         pearlComboKey = register("Pearl Combo", GLFW.GLFW_KEY_UNKNOWN);
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
@@ -143,11 +140,6 @@ public class AnchorAssist implements ClientModInitializer {
         while (macePvPKey.wasPressed()) {
             macePvPEnabled = toggle(client, macePvPEnabled, "Mace PvP");
             MacePvPManager.macePvPEnabled = macePvPEnabled;
-        }
-
-        while (autoFlyingKey.wasPressed()) {
-            autoFlyingEnabled = toggle(client, autoFlyingEnabled, "Auto Flying");
-            MacePvPManager.autoFlyingEnabled = autoFlyingEnabled;
         }
         
         while (pearlComboKey.wasPressed()) {
