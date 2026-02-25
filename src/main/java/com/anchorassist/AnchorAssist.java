@@ -1,6 +1,7 @@
 package com.anchorassist;
 
 import com.anchorassist.assist.HitboxStopManager;
+import com.anchorassist.assist.MacePvPManager;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
@@ -46,6 +47,8 @@ public class AnchorAssist implements ClientModInitializer {
     public static boolean anchorSafeEnabled = true;
     public static boolean smartCrystalBreakEnabled = true;
     public static boolean autoShieldBreakEnabled = true;
+    public static boolean macePvPEnabled = true;
+    public static boolean autoFlyingEnabled = true;
 
     // =========================
     // KEYBINDS
@@ -58,6 +61,8 @@ public class AnchorAssist implements ClientModInitializer {
     private static KeyBinding smartCrystalKey;
     private static KeyBinding autoShieldKey;
     private static KeyBinding crystalOptimizerKey;
+    private static KeyBinding macePvPKey;
+    private static KeyBinding autoFlyingKey;
 
     // =========================
     // AUTO ANCHOR SYSTEM
@@ -81,6 +86,8 @@ public class AnchorAssist implements ClientModInitializer {
         smartCrystalKey = register("Crystal Break", GLFW.GLFW_KEY_UNKNOWN);
         autoShieldKey = register("Break Shield", GLFW.GLFW_KEY_UNKNOWN);
         crystalOptimizerKey = register("Crystal Optimizer", GLFW.GLFW_KEY_UNKNOWN);
+        macePvPKey = register("Mace PvP", GLFW.GLFW_KEY_UNKNOWN);
+        autoFlyingKey = register("Auto Flying", GLFW.GLFW_KEY_UNKNOWN);
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
 
@@ -129,6 +136,14 @@ public class AnchorAssist implements ClientModInitializer {
 
         while (autoShieldKey.wasPressed())
             autoShieldBreakEnabled = toggle(client, autoShieldBreakEnabled, "Break Shield");
+
+        while (macePvPKey.wasPressed()) {
+            macePvPEnabled = toggle(client, macePvPEnabled, "Mace PvP");
+            MacePvPManager.macePvPEnabled = macePvPEnabled;
+
+        while (autoFlyingKey.wasPressed()) {
+            autoFlyingEnabled = toggle(client, autoFlyingEnabled, "Auto Flying");
+            MacePvPManager.autoFlyingEnabled = autoFlyingEnabled;
 
         while (crystalOptimizerKey.wasPressed()) {
             CrystalOptimizer.enabled = !CrystalOptimizer.enabled;
