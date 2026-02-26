@@ -3,6 +3,8 @@ package com.anchorassist.assist;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.projectile.thrown.EnderPearlEntity;
+import net.minecraft.item.Item;
 import net.minecraft.item.Items;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.EntityHitResult;
@@ -12,23 +14,26 @@ import java.util.concurrent.ThreadLocalRandom;
 public class MacePvPManager {
 
     // =========================
-    // TOGGLES (dikontrol dari AnchorAssist)
+    // TOGGLES
     // =========================
     public static boolean macePvPEnabled = true;
     public static boolean pearlComboEnabled = true;
 
     // =========================
-    // INTERNAL DELAY SYSTEM
+    // INTERNAL DELAYS
     // =========================
     private static int attackDelay = 0;
     private static int switchDelay = 0;
     private static boolean returningToMace = false;
 
+    // Pearl combo state
+    private static boolean pearlThrown = false;
+    private static int pearlDetectDelay = 0;
+
     // =========================
     // REGISTER
     // =========================
     public static void register() {
-
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
 
             if (client.player == null || client.world == null)
@@ -38,12 +43,12 @@ public class MacePvPManager {
                 handleMacePvP(client);
 
             if (pearlComboEnabled)
-                handlePearlCombo(client);
+                handlePearlWindCombo(client);
         });
     }
 
     // =========================
-    // MACE PVP (Slot Based)
+    // MACE PVP (AUTO SLOT DETECT)
     // =========================
     private static void handleMacePvP(MinecraftClient client) {
 
@@ -60,13 +65,16 @@ public class MacePvPManager {
         if (distance > 3.1D)
             return;
 
-        int maceSlot = 0; // Slot 1
-        int axeSlot = 6;  // Slot 7
+        int maceSlot = findHotbarItem(client, Items.MACE);
+        int axeSlot = findHotbarItem(client, Items.NETHERITE_AXE);
+
+        if (maceSlot == -1)
+            return; // Tidak ada mace
 
         // =========================
         // TARGET BLOCKING → SWITCH AXE
         // =========================
-        if (target.isBlocking()) {
+        if (target.isBlocking() && axeSlot != -1) {
 
             if (switchDelay == 0) {
                 client.player.getInventory().selectedSlot = axeSlot;
@@ -112,32 +120,71 @@ public class MacePvPManager {
     }
 
     // =========================
-    // PEARL → SLOT 8 INSTANT
+    // PEARL → WIND CHARGE COMBO
     // =========================
-    private static void handlePearlCombo(MinecraftClient client) {
+    private static void handlePearlWindCombo(MinecraftClient client) {
 
-        // Detect pearl throw
-        if (client.options.useKey.wasPressed() &&
+        if (pearlDetectDelay > 0)
+            pearlDetectDelay--;
+
+        // Detect pearl usage
+        if (client.options.useKey.isPressed() &&
                 client.player.getMainHandStack().isOf(Items.ENDER_PEARL)) {
 
-            int previousSlot = client.player.getInventory().selectedSlot;
-            int slot8 = 8; // slot terakhir hotbar (index 8)
-
-            if (client.player.getInventory().getStack(slot8).isEmpty())
-                return;
-
-            // Switch ke slot 8
-            client.player.getInventory().selectedSlot = slot8;
-
-            // Right click item slot 8
-            client.interactionManager.interactItem(
-                    client.player,
-                    Hand.MAIN_HAND
-            );
-
-            // Balik ke slot sebelumnya
-            client.player.getInventory().selectedSlot = previousSlot;
+            pearlThrown = true;
+            pearlDetectDelay = 3;
         }
+
+        if (!pearlThrown || pearlDetectDelay > 0)
+            return;
+
+        EnderPearlEntity pearl = null;
+
+        for (var entity : client.world.getEntities()) {
+            if (entity instanceof EnderPearlEntity e) {
+                if (e.getY() > client.player.getY()) {
+                    pearl = e;
+                    break;
+                }
+            }
+        }
+
+        if (pearl == null)
+            return;
+
+        int windSlot = findHotbarItem(client, Items.WIND_CHARGE);
+        if (windSlot == -1)
+            return;
+
+        client.player.getInventory().selectedSlot = windSlot;
+
+        double dx = pearl.getX() - client.player.getX();
+        double dy = pearl.getY() - client.player.getEyeY();
+        double dz = pearl.getZ() - client.player.getZ();
+        double dist = Math.sqrt(dx * dx + dz * dz);
+
+        float yaw = (float) (Math.toDegrees(Math.atan2(dz, dx)) - 90F);
+        float pitch = (float) (-Math.toDegrees(Math.atan2(dy, dist)));
+
+        client.player.setYaw(yaw);
+        client.player.setPitch(pitch);
+
+        client.interactionManager.interactItem(client.player, Hand.MAIN_HAND);
+
+        pearlThrown = false;
+    }
+
+    // =========================
+    // HOTBAR SCAN
+    // =========================
+    private static int findHotbarItem(MinecraftClient client, Item item) {
+
+        for (int i = 0; i < 9; i++) {
+            if (client.player.getInventory().getStack(i).isOf(item))
+                return i;
+        }
+
+        return -1;
     }
 
     // =========================
