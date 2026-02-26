@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "anchorassist",
-  "version": "v2.1",
+  "version": "v3.0-1.21.4",
   "name": "BNDTxDen Crystal PVP MOD",
   "description": "Competitive Crystal PvP Enhancement Client-Side Module built for High-Level Gameplay.",
   "authors": ["Denis as BNDTxDen"],
@@ -16,8 +16,8 @@
   },
 
   "depends": {
-    "fabricloader": ">=0.15.7",
-    "minecraft": "1.20.1",
-    "fabric": "*"
+    "fabricloader": ">=0.15.11",
+    "minecraft": "1.21.4",
+    "fabric-api": "*"
   }
 }
