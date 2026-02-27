@@ -221,9 +221,11 @@ public class AnchorAssist implements ClientModInitializer {
     }
 
     // =========================
-    // AUTO ANCHOR
+    // AUTO ANCHOR (1 TICK DELAY)
     // =========================
     private void handleAutoAnchor(MinecraftClient client) {
+
+        if (anchorDelayTick > 0) return;
 
         if (!(client.crosshairTarget instanceof BlockHitResult hit)) return;
 
@@ -237,22 +239,24 @@ public class AnchorAssist implements ClientModInitializer {
         client.player.getInventory().selectedSlot = glowSlot;
         client.interactionManager.interactBlock(client.player, Hand.MAIN_HAND, hit);
         client.player.swingHand(Hand.MAIN_HAND);
+
+        anchorDelayTick = 1; // ~0.3 detik
     }
 
     // =========================
-    // ANCHOR SAFE
+    // ANCHOR SAFE (1 TICK DELAY)
     // =========================
     private void handleAnchorSafe(MinecraftClient mc) {
+
+        if (safeDelayTick > 0) return;
 
         if (!(mc.crosshairTarget instanceof BlockHitResult hit)) return;
 
         BlockPos anchorPos = hit.getBlockPos();
-        if (!(mc.world.getBlockState(anchorPos).getBlock() instanceof RespawnAnchorBlock))
-            return;
+        BlockState state = mc.world.getBlockState(anchorPos);
 
-        int charges = mc.world.getBlockState(anchorPos)
-                .get(RespawnAnchorBlock.CHARGES);
-        if (charges < 1) return;
+        if (!(state.getBlock() instanceof RespawnAnchorBlock)) return;
+        if (state.get(RespawnAnchorBlock.CHARGES) < 1) return;
 
         Vec3d playerPos = mc.player.getPos();
         Vec3d anchorCenter = Vec3d.ofCenter(anchorPos);
@@ -278,6 +282,8 @@ public class AnchorAssist implements ClientModInitializer {
         );
 
         mc.player.swingHand(Hand.MAIN_HAND);
+
+        safeDelayTick = 1; //
     }
 
     // =========================
