@@ -92,6 +92,9 @@ public class AnchorAssist implements ClientModInitializer {
 
             if (client.player == null || client.world == null) return;
 
+            if (anchorDelayTick > 0) anchorDelayTick--;
+            if (safeDelayTick > 0) safeDelayTick--;
+
             handleToggles(client);
 
             if (autoHitEnabled) handleAutoHit(client);
