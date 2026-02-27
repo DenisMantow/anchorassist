@@ -166,20 +166,22 @@ public class AnchorAssist implements ClientModInitializer {
     }
 
     // =========================
-    // AUTO HIT
+    // AUTO HIT (FIXED SAFE VERSION)
     // =========================
     private void handleAutoHit(MinecraftClient client) {
 
-        if (client.crosshairTarget instanceof EntityHitResult hit &&
-                hit.getEntity() instanceof PlayerEntity target) {
+        // Jangan jalan kalau GUI terbuka (inventory, chest, dll)
+        if (client.currentScreen != null) return;
 
-            if (client.player.distanceTo(target) <= 3.1D &&
-                    client.player.getAttackCooldownProgress(0.5f) >= 1.0f) {
+        if (!(client.crosshairTarget instanceof EntityHitResult hit)) return;
+        if (!(hit.getEntity() instanceof PlayerEntity target)) return;
 
-                client.interactionManager.attackEntity(client.player, target);
-                client.player.swingHand(Hand.MAIN_HAND);
-            }
-        }
+        if (target == client.player) return;
+        if (client.player.distanceTo(target) > 3.1D) return;
+        if (client.player.getAttackCooldownProgress(0.5f) < 1.0f) return;
+
+        client.interactionManager.attackEntity(client.player, target);
+        client.player.swingHand(Hand.MAIN_HAND);
     }
 
     // =========================
