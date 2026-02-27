@@ -67,9 +67,8 @@ public class AnchorAssist implements ClientModInitializer {
     // =========================
     // AUTO ANCHOR SYSTEM
     // =========================
-    private int anchorDelay = 0;
-    private int anchorStage = 0;
-    private int previousSlot = 0;
+    private int anchorDelayTick = 0;
+    private int safeDelayTick = 0;
 
     @Override
     public void onInitializeClient() {
