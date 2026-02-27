@@ -120,14 +120,14 @@ public class MacePvPManager {
     }
 
     // =========================
-    // PEARL → WIND CHARGE COMBO
+    // PEARL → WIND CHARGE (VERTICAL ONLY)
     // =========================
     private static void handlePearlWindCombo(MinecraftClient client) {
 
         if (pearlDetectDelay > 0)
             pearlDetectDelay--;
 
-        // Detect pearl usage
+        // Detect pearl throw
         if (client.options.useKey.isPressed() &&
                 client.player.getMainHandStack().isOf(Items.ENDER_PEARL)) {
 
@@ -141,11 +141,27 @@ public class MacePvPManager {
         EnderPearlEntity pearl = null;
 
         for (var entity : client.world.getEntities()) {
+
             if (entity instanceof EnderPearlEntity e) {
-                if (e.getY() > client.player.getY()) {
-                    pearl = e;
-                    break;
-                }
+
+                // Pearl harus di atas player
+                if (e.getY() <= client.player.getY())
+                    continue;
+
+                // =========================
+                // VERTICAL CHECK
+                // =========================
+                double horizontalSpeed = Math.sqrt(
+                        e.getVelocity().x * e.getVelocity().x +
+                        e.getVelocity().z * e.getVelocity().z
+                );
+
+                // Jika terlalu diagonal → jangan aktif
+                if (horizontalSpeed > 0.15)
+                    return;
+
+                pearl = e;
+                break;
             }
         }
 
@@ -158,6 +174,7 @@ public class MacePvPManager {
 
         client.player.getInventory().selectedSlot = windSlot;
 
+        // Aim ke pearl
         double dx = pearl.getX() - client.player.getX();
         double dy = pearl.getY() - client.player.getEyeY();
         double dz = pearl.getZ() - client.player.getZ();
