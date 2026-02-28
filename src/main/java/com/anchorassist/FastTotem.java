@@ -7,6 +7,8 @@ import net.minecraft.item.Items;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
 
+import org.lwjgl.glfw.GLFW;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -29,7 +31,7 @@ public class FastTotem {
 
     private static void handle(MinecraftClient client) {
 
-        // Hanya aktif saat inventory terbuka
+        // Hanya jalan saat inventory terbuka
         if (!(client.currentScreen instanceof InventoryScreen screen)) return;
         if (client.player.currentScreenHandler == null) return;
 
@@ -42,7 +44,7 @@ public class FastTotem {
 
         List<Integer> totemSlots = new ArrayList<>();
 
-        // Scan inventory utama (9–35)
+        // Scan inventory player (9–35)
         for (int i = 9; i <= 35; i++) {
             if (client.player.currentScreenHandler
                     .getSlot(i).getStack().getItem() == Items.TOTEM_OF_UNDYING) {
@@ -73,7 +75,7 @@ public class FastTotem {
         moveMouseToSlot(client, screen, randomSlot);
 
         // =========================
-        // SWAP (TIDAK GERAK KE SLOT TUJUAN)
+        // SWAP (mouse tidak pindah ke slot tujuan)
         // =========================
         if (slot7Empty) {
             swap(client, syncId, randomSlot, 7);
@@ -83,12 +85,11 @@ public class FastTotem {
             swap(client, syncId, randomSlot, 40);
         }
 
-        // Delay random biar natural
-        delay = ThreadLocalRandom.current().nextInt(2, 6);
+        delay = ThreadLocalRandom.current().nextInt(2, 5);
     }
 
     // =========================
-    // MOVE MOUSE VISUAL KE SLOT TOTEM (1.21.4 FIX)
+    // MOVE MOUSE VISUAL KE SLOT TOTEM
     // =========================
     private static void moveMouseToSlot(MinecraftClient client,
                                         InventoryScreen screen,
@@ -98,13 +99,14 @@ public class FastTotem {
 
         Slot slot = client.player.currentScreenHandler.getSlot(slotIndex);
 
-        // Posisi tengah slot
+        // Offset agar tepat ke tengah slot
         double mouseX = screen.width / 2.0 - 90 + slot.x + 8;
         double mouseY = screen.height / 2.0 - 90 + slot.y + 8;
 
         long windowHandle = client.getWindow().getHandle();
 
-        client.mouse.onCursorPos(windowHandle, mouseX, mouseY);
+        // ✅ FIX 1.21.4 (public GLFW call)
+        GLFW.glfwSetCursorPos(windowHandle, mouseX, mouseY);
     }
 
     private static void swap(MinecraftClient client,
