@@ -1,13 +1,13 @@
 package com.anchorassist;
 
+import com.anchorassist.visual.FakeMouseRenderer;
+
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.InventoryScreen;
 import net.minecraft.item.Items;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
-
-import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +34,7 @@ public class FastTotem {
 
     private static void handle(MinecraftClient client) {
 
+        // Reset kalau inventory ditutup
         if (!(client.currentScreen instanceof InventoryScreen screen)) {
             waitingForMouse = false;
             return;
@@ -49,7 +50,7 @@ public class FastTotem {
         int syncId = client.player.currentScreenHandler.syncId;
 
         // =========================
-        // FIND TOTEM
+        // FIND TOTEM (9–35)
         // =========================
         List<Integer> totemSlots = new ArrayList<>();
 
@@ -62,7 +63,7 @@ public class FastTotem {
 
         if (totemSlots.isEmpty()) return;
 
-        int slot7 = 36 + 7;
+        int slot7 = 36 + 7; // hotbar index 7
         int offhand = 45;
 
         boolean slot7Empty = client.player.currentScreenHandler
@@ -74,7 +75,7 @@ public class FastTotem {
         if (!slot7Empty && !offhandEmpty) return;
 
         // =========================
-        // PHASE 1: MOVE MOUSE
+        // PHASE 1: MOVE FAKE MOUSE
         // =========================
         if (!waitingForMouse) {
 
@@ -82,18 +83,17 @@ public class FastTotem {
                     ThreadLocalRandom.current().nextInt(totemSlots.size())
             );
 
-            if (slot7Empty) targetHotbar = 7;
-            else targetHotbar = 40;
+            targetHotbar = slot7Empty ? 7 : 40;
 
             moveMouseToSlot(client, screen, targetSlot);
 
             waitingForMouse = true;
-            delay = 4; // tunggu beberapa tick sebelum swap
+            delay = 4; // tunggu 4 tick sebelum swap
             return;
         }
 
         // =========================
-        // PHASE 2: SWAP AFTER MOUSE ARRIVED
+        // PHASE 2: SWAP AFTER DELAY
         // =========================
         if (waitingForMouse) {
 
@@ -111,7 +111,7 @@ public class FastTotem {
     }
 
     // =========================
-    // REAL MOUSE MOVE (GLFW)
+    // MOVE VISUAL FAKE MOUSE
     // =========================
     private static void moveMouseToSlot(MinecraftClient client,
                                         InventoryScreen screen,
@@ -119,16 +119,9 @@ public class FastTotem {
 
         Slot slot = client.player.currentScreenHandler.getSlot(slotIndex);
 
-        double guiX = screen.getX() + slot.x + 8;
-        double guiY = screen.getY() + slot.y + 8;
+        double mouseX = screen.width / 2.0 - 90 + slot.x;
+        double mouseY = screen.height / 2.0 - 90 + slot.y;
 
-        long window = client.getWindow().getHandle();
-
-        double scaleFactor = client.getWindow().getScaleFactor();
-
-        double realX = guiX * scaleFactor;
-        double realY = guiY * scaleFactor;
-
-        GLFW.glfwSetCursorPos(window, realX, realY);
+        FakeMouseRenderer.moveTo(mouseX, mouseY);
     }
 }
