@@ -1,8 +1,8 @@
 package com.anchorassist.visual;
 
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.render.RenderTickCounter;
 
 public class FakeMouseRenderer {
 
@@ -24,11 +24,10 @@ public class FakeMouseRenderer {
         visible = false;
     }
 
-    private static void onRender(DrawContext context, float tickDelta) {
+    private static void onRender(DrawContext context, RenderTickCounter tickCounter) {
 
         if (!visible) return;
 
-        // Gambar kotak kecil putih sebagai fake cursor
         context.fill(
                 (int)x,
                 (int)y,
