@@ -29,7 +29,7 @@ public class FastTotem {
 
     private static void handle(MinecraftClient client) {
 
-        // Hanya jalan saat inventory terbuka
+        // Hanya aktif saat inventory terbuka
         if (!(client.currentScreen instanceof InventoryScreen screen)) return;
         if (client.player.currentScreenHandler == null) return;
 
@@ -42,7 +42,7 @@ public class FastTotem {
 
         List<Integer> totemSlots = new ArrayList<>();
 
-        // Scan inventory player (9–35)
+        // Scan inventory utama (9–35)
         for (int i = 9; i <= 35; i++) {
             if (client.player.currentScreenHandler
                     .getSlot(i).getStack().getItem() == Items.TOTEM_OF_UNDYING) {
@@ -73,7 +73,7 @@ public class FastTotem {
         moveMouseToSlot(client, screen, randomSlot);
 
         // =========================
-        // SWAP (TANPA GERAK KE SLOT TUJUAN)
+        // SWAP (TIDAK GERAK KE SLOT TUJUAN)
         // =========================
         if (slot7Empty) {
             swap(client, syncId, randomSlot, 7);
@@ -83,23 +83,28 @@ public class FastTotem {
             swap(client, syncId, randomSlot, 40);
         }
 
-        delay = ThreadLocalRandom.current().nextInt(2, 5);
+        // Delay random biar natural
+        delay = ThreadLocalRandom.current().nextInt(2, 6);
     }
 
     // =========================
-    // MOVE MOUSE VISUAL KE SLOT TOTEM
+    // MOVE MOUSE VISUAL KE SLOT TOTEM (1.21.4 FIX)
     // =========================
     private static void moveMouseToSlot(MinecraftClient client,
                                         InventoryScreen screen,
                                         int slotIndex) {
 
+        if (client.getWindow() == null) return;
+
         Slot slot = client.player.currentScreenHandler.getSlot(slotIndex);
 
-        double mouseX = screen.width / 2.0 - 90 + slot.x;
-        double mouseY = screen.height / 2.0 - 90 + slot.y;
+        // Posisi tengah slot
+        double mouseX = screen.width / 2.0 - 90 + slot.x + 8;
+        double mouseY = screen.height / 2.0 - 90 + slot.y + 8;
 
-        client.mouse.lockCursor();
-        client.mouse.onCursorPos(mouseX, mouseY);
+        long windowHandle = client.getWindow().getHandle();
+
+        client.mouse.onCursorPos(windowHandle, mouseX, mouseY);
     }
 
     private static void swap(MinecraftClient client,
