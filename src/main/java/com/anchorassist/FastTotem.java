@@ -7,6 +7,8 @@ import net.minecraft.item.Items;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
 
+import org.lwjgl.glfw.GLFW;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -14,24 +16,12 @@ import java.util.concurrent.ThreadLocalRandom;
 public class FastTotem {
 
     private static int delay = 0;
-
-    private static boolean moveMouse = false;
-    private static double targetX, targetY;
+    private static boolean waitingForMouse = false;
+    private static int targetSlot = -1;
+    private static int targetHotbar = -1;
 
     public static void init() {
         ClientTickEvents.END_CLIENT_TICK.register(FastTotem::onTick);
-    }
-
-    public static boolean shouldMoveMouse() {
-        return moveMouse;
-    }
-
-    public static double getTargetX() {
-        return targetX;
-    }
-
-    public static double getTargetY() {
-        return targetY;
     }
 
     private static void onTick(MinecraftClient client) {
@@ -45,7 +35,7 @@ public class FastTotem {
     private static void handle(MinecraftClient client) {
 
         if (!(client.currentScreen instanceof InventoryScreen screen)) {
-            moveMouse = false;
+            waitingForMouse = false;
             return;
         }
 
@@ -58,6 +48,9 @@ public class FastTotem {
 
         int syncId = client.player.currentScreenHandler.syncId;
 
+        // =========================
+        // FIND TOTEM
+        // =========================
         List<Integer> totemSlots = new ArrayList<>();
 
         for (int i = 9; i <= 35; i++) {
@@ -80,39 +73,62 @@ public class FastTotem {
 
         if (!slot7Empty && !offhandEmpty) return;
 
-        int randomSlot = totemSlots.get(
-                ThreadLocalRandom.current().nextInt(totemSlots.size())
-        );
+        // =========================
+        // PHASE 1: MOVE MOUSE
+        // =========================
+        if (!waitingForMouse) {
 
-        Slot slot = client.player.currentScreenHandler.getSlot(randomSlot);
+            targetSlot = totemSlots.get(
+                    ThreadLocalRandom.current().nextInt(totemSlots.size())
+            );
 
-        targetX = screen.width / 2.0 - 90 + slot.x;
-        targetY = screen.height / 2.0 - 90 + slot.y;
+            if (slot7Empty) targetHotbar = 7;
+            else targetHotbar = 40;
 
-        moveMouse = true;
+            moveMouseToSlot(client, screen, targetSlot);
 
-        if (slot7Empty) {
-            swap(client, syncId, randomSlot, 7);
+            waitingForMouse = true;
+            delay = 4; // tunggu beberapa tick sebelum swap
+            return;
         }
 
-        if (offhandEmpty) {
-            swap(client, syncId, randomSlot, 40);
-        }
+        // =========================
+        // PHASE 2: SWAP AFTER MOUSE ARRIVED
+        // =========================
+        if (waitingForMouse) {
 
-        delay = ThreadLocalRandom.current().nextInt(3, 6);
+            client.interactionManager.clickSlot(
+                    syncId,
+                    targetSlot,
+                    targetHotbar,
+                    SlotActionType.SWAP,
+                    client.player
+            );
+
+            waitingForMouse = false;
+            delay = ThreadLocalRandom.current().nextInt(4, 8);
+        }
     }
 
-    private static void swap(MinecraftClient client,
-                             int syncId,
-                             int from,
-                             int hotbarSlot) {
+    // =========================
+    // REAL MOUSE MOVE (GLFW)
+    // =========================
+    private static void moveMouseToSlot(MinecraftClient client,
+                                        InventoryScreen screen,
+                                        int slotIndex) {
 
-        client.interactionManager.clickSlot(
-                syncId,
-                from,
-                hotbarSlot,
-                SlotActionType.SWAP,
-                client.player
-        );
+        Slot slot = client.player.currentScreenHandler.getSlot(slotIndex);
+
+        double guiX = screen.getX() + slot.x + 8;
+        double guiY = screen.getY() + slot.y + 8;
+
+        long window = client.getWindow().getHandle();
+
+        double scaleFactor = client.getWindow().getScaleFactor();
+
+        double realX = guiX * scaleFactor;
+        double realY = guiY * scaleFactor;
+
+        GLFW.glfwSetCursorPos(window, realX, realY);
     }
 }
