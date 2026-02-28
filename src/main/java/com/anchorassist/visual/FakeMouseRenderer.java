@@ -3,51 +3,38 @@ package com.anchorassist.visual;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.util.Identifier;
 
 public class FakeMouseRenderer {
 
     private static double x;
     private static double y;
-    private static double targetX;
-    private static double targetY;
-    private static boolean active = false;
-
-    private static final Identifier CURSOR =
-            new Identifier("minecraft", "textures/gui/sprites/container/slot.png");
+    private static boolean visible = false;
 
     public static void init() {
-        HudRenderCallback.EVENT.register(FakeMouseRenderer::render);
+        HudRenderCallback.EVENT.register(FakeMouseRenderer::onRender);
     }
 
-    public static void moveTo(double tx, double ty) {
-        targetX = tx;
-        targetY = ty;
-        active = true;
+    public static void moveTo(double newX, double newY) {
+        x = newX;
+        y = newY;
+        visible = true;
     }
 
-    public static void stop() {
-        active = false;
+    public static void hide() {
+        visible = false;
     }
 
-    private static void render(DrawContext context, float tickDelta) {
+    private static void onRender(DrawContext context, float tickDelta) {
 
-        if (!active) return;
+        if (!visible) return;
 
-        // Smooth movement
-        x += (targetX - x) * 0.25;
-        y += (targetY - y) * 0.25;
-
-        context.drawTexture(
-                CURSOR,
-                (int) x,
-                (int) y,
-                0,
-                0,
-                16,
-                16,
-                16,
-                16
+        // Gambar kotak kecil putih sebagai fake cursor
+        context.fill(
+                (int)x,
+                (int)y,
+                (int)x + 4,
+                (int)y + 4,
+                0xFFFFFFFF
         );
     }
 }
