@@ -1,0 +1,11 @@
+{
+  "required": true,
+  "package": "com.anchorassist.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "MouseMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
