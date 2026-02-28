@@ -1,5 +1,6 @@
 package com.anchorassist;
 
+import com.anchorassist.visual.FakeMouseRenderer;
 import com.anchorassist.assist.HitboxStopManager;
 import com.anchorassist.assist.MacePvPManager;
 import net.fabricmc.api.ClientModInitializer;
@@ -73,6 +74,7 @@ public class AnchorAssist implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
 
+        FakeMouseRenderer.init();
         FastTotem.init();
         HitboxStopManager.register();
         MacePvPManager.register();
