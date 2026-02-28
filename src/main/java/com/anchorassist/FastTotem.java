@@ -4,6 +4,7 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.InventoryScreen;
 import net.minecraft.item.Items;
+import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
 
 import java.util.ArrayList;
@@ -20,7 +21,7 @@ public class FastTotem {
 
     private static void onTick(MinecraftClient client) {
 
-        if (!AnchorAssist.fastTotemEnabled) return; // ✅ WAJIB ADA
+        if (!AnchorAssist.fastTotemEnabled) return;
         if (client.player == null) return;
 
         handle(client);
@@ -28,7 +29,8 @@ public class FastTotem {
 
     private static void handle(MinecraftClient client) {
 
-        if (!(client.currentScreen instanceof InventoryScreen)) return;
+        // Hanya jalan saat inventory terbuka
+        if (!(client.currentScreen instanceof InventoryScreen screen)) return;
         if (client.player.currentScreenHandler == null) return;
 
         if (delay > 0) {
@@ -40,16 +42,17 @@ public class FastTotem {
 
         List<Integer> totemSlots = new ArrayList<>();
 
+        // Scan inventory player (9–35)
         for (int i = 9; i <= 35; i++) {
-            if (client.player.currentScreenHandler.getSlot(i)
-                    .getStack().getItem() == Items.TOTEM_OF_UNDYING) {
+            if (client.player.currentScreenHandler
+                    .getSlot(i).getStack().getItem() == Items.TOTEM_OF_UNDYING) {
                 totemSlots.add(i);
             }
         }
 
         if (totemSlots.isEmpty()) return;
 
-        int slot7 = 36 + 7;
+        int slot7 = 36 + 7; // hotbar index 7
         int offhand = 45;
 
         boolean slot7Empty = client.player.currentScreenHandler
@@ -64,6 +67,14 @@ public class FastTotem {
                 ThreadLocalRandom.current().nextInt(totemSlots.size())
         );
 
+        // =========================
+        // HUMAN VISUAL MOUSE MOVE
+        // =========================
+        moveMouseToSlot(client, screen, randomSlot);
+
+        // =========================
+        // SWAP (TANPA GERAK KE SLOT TUJUAN)
+        // =========================
         if (slot7Empty) {
             swap(client, syncId, randomSlot, 7);
         }
@@ -72,14 +83,34 @@ public class FastTotem {
             swap(client, syncId, randomSlot, 40);
         }
 
-        delay = ThreadLocalRandom.current().nextInt(1, 4);
+        delay = ThreadLocalRandom.current().nextInt(2, 5);
     }
 
-    private static void swap(MinecraftClient client, int syncId, int from, int to) {
+    // =========================
+    // MOVE MOUSE VISUAL KE SLOT TOTEM
+    // =========================
+    private static void moveMouseToSlot(MinecraftClient client,
+                                        InventoryScreen screen,
+                                        int slotIndex) {
+
+        Slot slot = client.player.currentScreenHandler.getSlot(slotIndex);
+
+        double mouseX = screen.width / 2.0 - 90 + slot.x;
+        double mouseY = screen.height / 2.0 - 90 + slot.y;
+
+        client.mouse.lockCursor();
+        client.mouse.onCursorPos(mouseX, mouseY);
+    }
+
+    private static void swap(MinecraftClient client,
+                             int syncId,
+                             int from,
+                             int hotbarSlot) {
+
         client.interactionManager.clickSlot(
                 syncId,
                 from,
-                to,
+                hotbarSlot,
                 SlotActionType.SWAP,
                 client.player
         );
